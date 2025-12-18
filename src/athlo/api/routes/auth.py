@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from athlo.api.deps import get_current_user
 from athlo.api.schemas import (
     ErrorResponse,
+    GoogleLoginRequest,
     LoginRequest,
     LogoutRequest,
     PasswordChangeRequest,
@@ -41,6 +42,8 @@ async def register(request: RegisterRequest):
             name=user.name,
             preferred_units=user.preferred_units,
             is_active=user.is_active,
+            auth_provider=user.auth_provider,
+            avatar_url=user.avatar_url,
             created_at=user.created_at,
         )
     except AuthError as e:
@@ -93,6 +96,25 @@ async def logout(request: LogoutRequest):
     return None
 
 
+@router.post(
+    "/google",
+    response_model=TokenResponse,
+    responses={401: {"model": ErrorResponse}},
+)
+async def login_with_google(request: GoogleLoginRequest):
+    """Login or register with Google OAuth."""
+    try:
+        user, access_token, refresh_token = await auth_service.login_with_google(
+            id_token=request.id_token
+        )
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+
 # User profile routes (protected)
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -106,6 +128,8 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
         name=current_user.name,
         preferred_units=current_user.preferred_units,
         is_active=current_user.is_active,
+        auth_provider=current_user.auth_provider,
+        avatar_url=current_user.avatar_url,
         created_at=current_user.created_at,
     )
 
@@ -133,6 +157,8 @@ async def update_profile(
         name=updated_user.name,
         preferred_units=updated_user.preferred_units,
         is_active=updated_user.is_active,
+        auth_provider=updated_user.auth_provider,
+        avatar_url=updated_user.avatar_url,
         created_at=updated_user.created_at,
     )
 

@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
 
+import httpx
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import EmailStr
@@ -189,3 +190,92 @@ def change_password(user_id: UUID, current_password: str, new_password: str) -> 
 def delete_user(user_id: UUID) -> bool:
     """Delete a user account."""
     return user_repo.delete(user_id)
+
+
+# ==================== GOOGLE OAUTH ====================
+
+
+async def verify_google_token(id_token: str) -> dict:
+    """
+    Verify Google ID token and return user info.
+
+    Args:
+        id_token: The Google ID token from the client
+
+    Returns:
+        Dict with user info: {sub, email, name, picture}
+    """
+    # Verify with Google's tokeninfo endpoint
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+        )
+
+        if response.status_code != 200:
+            raise AuthError("Invalid Google token")
+
+        data = response.json()
+
+        # Verify the token is for our app (if client_id is configured)
+        if settings.google_client_id and data.get("aud") != settings.google_client_id:
+            raise AuthError("Token was not issued for this application")
+
+        return {
+            "sub": data.get("sub"),  # Google user ID
+            "email": data.get("email"),
+            "name": data.get("name", data.get("email", "").split("@")[0]),
+            "picture": data.get("picture"),
+            "email_verified": data.get("email_verified") == "true",
+        }
+
+
+async def login_with_google(id_token: str) -> tuple[User, str, str]:
+    """
+    Login or register a user with Google OAuth.
+
+    Args:
+        id_token: The Google ID token from the client
+
+    Returns:
+        Tuple of (user, access_token, refresh_token)
+    """
+    # Verify the Google token
+    google_user = await verify_google_token(id_token)
+
+    if not google_user.get("email"):
+        raise AuthError("Could not retrieve email from Google")
+
+    # Check if user exists by Google ID
+    user = user_repo.find_one_by(google_id=google_user["sub"])
+
+    if not user:
+        # Check if user exists by email
+        user = user_repo.find_one_by(email=google_user["email"])
+
+        if user:
+            # Link Google account to existing email account
+            user.google_id = google_user["sub"]
+            user.auth_provider = "google"
+            if google_user.get("picture"):
+                user.avatar_url = google_user["picture"]
+            user_repo.update(user)
+        else:
+            # Create new user
+            user = User(
+                email=google_user["email"],
+                password_hash=None,  # No password for OAuth users
+                name=google_user["name"],
+                google_id=google_user["sub"],
+                auth_provider="google",
+                avatar_url=google_user.get("picture"),
+            )
+            user = user_repo.create(user)
+
+    if not user.is_active:
+        raise AuthError("Account is deactivated")
+
+    # Generate tokens
+    access_token = create_access_token(user.id)
+    refresh_token_str, _ = create_refresh_token(user.id)
+
+    return user, access_token, refresh_token_str

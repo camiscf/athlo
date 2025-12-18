@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
+    # Google OAuth Settings
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
     # Data storage
     data_dir: Path = Path("data")
 

@@ -12,10 +12,15 @@ class User(BaseModel):
     """User account model."""
 
     email: EmailStr
-    password_hash: str
+    password_hash: str | None = None  # Optional for OAuth users
     name: str
     preferred_units: str = "metric"  # "metric" or "imperial"
     is_active: bool = True
+
+    # OAuth fields
+    google_id: str | None = None
+    auth_provider: str = "email"  # "email" or "google"
+    avatar_url: str | None = None
 
 
 class RefreshToken(BaseModel):

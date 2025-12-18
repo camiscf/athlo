@@ -42,6 +42,12 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class GoogleLoginRequest(BaseModel):
+    """Google OAuth login request."""
+
+    id_token: str
+
+
 # User schemas
 class UserResponse(BaseModel):
     """User profile response (excludes sensitive data)."""
@@ -51,6 +57,8 @@ class UserResponse(BaseModel):
     name: str
     preferred_units: str
     is_active: bool
+    auth_provider: str = "email"
+    avatar_url: str | None = None
     created_at: datetime
 
 
