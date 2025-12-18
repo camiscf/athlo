@@ -1,11 +1,11 @@
 # Athlo - Development Plan
 
 ## Project Overview
-Athlo is a personal sports tracking application for running, cycling, swimming, and strength training.
+Athlo is a personal sports tracking application for running, strength training, and body measurements.
 
 ## Architecture
-- **Backend**: FastAPI (Python) - Already built
-- **Frontend**: React Native with Expo (Mobile app)
+- **Backend**: FastAPI (Python)
+- **Frontend**: React Native with Expo (Web + Mobile)
 - **Data Storage**: JSON files (can migrate to database later)
 
 ---
@@ -14,67 +14,166 @@ Athlo is a personal sports tracking application for running, cycling, swimming, 
 Located in `src/athlo/`
 
 ### API Endpoints Available:
+
+#### Authentication
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login and get tokens
 - `POST /auth/refresh` - Refresh access token
 - `POST /auth/logout` - Logout user
+
+#### Users
 - `GET /users/me` - Get current user profile
 - `PUT /users/me` - Update profile
 - `PUT /users/me/password` - Change password
 - `DELETE /users/me` - Delete account
-- `GET /activities/running` - List running activities (with date filters)
-- `POST /activities/running` - Create running activity
+
+#### Running Activities
+- `GET /activities/running` - List activities (with date filters)
+- `POST /activities/running` - Create activity
 - `GET /activities/running/{id}` - Get specific activity
 - `PUT /activities/running/{id}` - Update activity
 - `DELETE /activities/running/{id}` - Delete activity
 
+#### Strength Training
+- `GET /strength/exercises` - List exercises (with muscle group filter)
+- `GET /strength/muscle-groups` - List muscle groups
+- `POST /strength/exercises` - Create custom exercise
+- `DELETE /strength/exercises/{id}` - Delete custom exercise
+- `GET /strength/divisions` - List workout divisions
+- `GET /strength/divisions/{id}` - Get specific division
+- `POST /strength/divisions` - Create division
+- `PUT /strength/divisions/{id}` - Update division
+- `DELETE /strength/divisions/{id}` - Delete division
+- `GET /strength/activities` - List strength workouts
+- `GET /strength/activities/{id}` - Get specific workout
+- `POST /strength/activities` - Create workout
+- `PUT /strength/activities/{id}` - Update workout
+- `DELETE /strength/activities/{id}` - Delete workout
+- `GET /strength/history/{exercise_name}` - Get exercise progression
+
+#### Body Measurements
+- `GET /body/measurements` - List measurements
+- `GET /body/measurements/{id}` - Get specific measurement
+- `POST /body/measurements` - Create measurement
+- `PUT /body/measurements/{id}` - Update measurement
+- `DELETE /body/measurements/{id}` - Delete measurement
+- `GET /body/latest` - Get latest measurement
+- `GET /body/weight-history` - Get weight history for charts
+
 ---
 
-## Frontend Status: FUNCTIONAL MVP
+## Frontend Status: FEATURE-COMPLETE MVP
 Located in `frontend/`
 
-### Completed:
-1. ✅ Expo project with TypeScript
-2. ✅ Dependencies (navigation, axios, async-storage)
-3. ✅ Project structure:
-   - `src/types/index.ts` - TypeScript types
-   - `src/services/api.ts` - API service with auth token handling
-   - `src/context/AuthContext.tsx` - Authentication context
-4. ✅ Navigation:
-   - `src/navigation/AuthNavigator.tsx` - Auth Stack
-   - `src/navigation/MainNavigator.tsx` - Tab + Stack Navigator
-   - `src/navigation/RootNavigator.tsx` - Root with auth state switch
-5. ✅ Authentication Screens:
-   - `src/screens/auth/LoginScreen.tsx` - Login with email/password
-   - `src/screens/auth/RegisterScreen.tsx` - User registration
-6. ✅ Main App Screens:
-   - `src/screens/main/HomeScreen.tsx` - Dashboard with stats
-   - `src/screens/main/ActivitiesScreen.tsx` - List of activities
-   - `src/screens/main/AddActivityScreen.tsx` - Form to log activity
-   - `src/screens/main/ProfileScreen.tsx` - User profile with logout
-   - `src/screens/main/ActivityDetailScreen.tsx` - Activity details with delete
+### Navigation Structure (5 tabs + header profile):
+1. **Início** (🏠) - Dashboard with stats
+2. **Atividades** (📋) - Combined activity list
+3. **Corrida** (🏃) - Log running activities
+4. **Força** (💪) - Workout divisions & logging
+5. **Corpo** (⚖️) - Body measurements
+6. **Perfil** (via header icon) - User profile & settings
 
-### Features Working:
-- ✅ User registration and login
+### Completed Features:
+
+#### Authentication
+- ✅ User registration with validation
+- ✅ Login with email/password
 - ✅ Logout functionality
-- ✅ Create running activity (distance, time, effort, notes)
-- ✅ List all activities
-- ✅ View activity details
-- ✅ Delete activity
-- ✅ Dashboard with weekly and total stats
-- ✅ Responsive design for web/mobile
+- ✅ Token refresh handling
+- ✅ Detailed error messages
 
-### TODO - Future Enhancements:
-- [ ] Edit existing activity
-- [ ] Date picker for activity date
+#### Running Activities
+- ✅ Create running activity (distance, time, pace, effort, notes)
+- ✅ Edit existing activity
+- ✅ Delete activity
+- ✅ View activity details
+- ✅ Auto-generated titles based on distance/time
+- ✅ Visual date/time pickers
+
+#### Strength Training
+- ✅ Create workout divisions (e.g., "Push", "Pull", "Legs")
+- ✅ Add exercises to divisions with sets, reps, rest time
+- ✅ Exercise bank with muscle group filtering
+- ✅ Create custom exercises
+- ✅ Record strength workouts from division templates
+- ✅ Track weight progression per exercise
+- ✅ View workout history
+- ✅ Edit/delete workouts
+
+#### Body Measurements
+- ✅ Record weight
+- ✅ Record body fat percentage
+- ✅ Record body circumferences (chest, waist, arms, etc.)
+- ✅ View measurement history
+- ✅ Weight trend visualization
+
+#### Statistics & Charts
+- ✅ Statistics dashboard with period selector (7d, 30d, 1y, all)
+- ✅ Running stats: distance over time, pace trends, weekly volume
+- ✅ Strength stats: volume trends, muscle group distribution
+- ✅ Exercise progression charts (weight over time)
+- ✅ Weight trend chart
+- ✅ Personal records display
+
+#### Dashboard (Home Screen)
+- ✅ Weekly stats summary
+- ✅ Total stats (runs, workouts, distance)
+- ✅ Recent activities (running + strength combined)
+- ✅ Quick access to full statistics
+
+### Screens:
+```
+src/screens/
+├── auth/
+│   ├── LoginScreen.tsx
+│   └── RegisterScreen.tsx
+├── main/
+│   ├── HomeScreen.tsx
+│   ├── ActivitiesScreen.tsx
+│   ├── AddActivityScreen.tsx
+│   ├── ActivityDetailScreen.tsx
+│   ├── ProfileScreen.tsx
+│   ├── DivisionsScreen.tsx
+│   ├── EditDivisionScreen.tsx
+│   ├── RecordStrengthWorkoutScreen.tsx
+│   ├── StrengthActivityDetailScreen.tsx
+│   ├── EditStrengthWorkoutScreen.tsx
+│   ├── BodyScreen.tsx
+│   ├── StatsScreen.tsx
+│   ├── RunningStatsScreen.tsx
+│   └── StrengthStatsScreen.tsx
+```
+
+### Components:
+```
+src/components/
+├── charts/
+│   ├── StatCard.tsx
+│   ├── PeriodSelector.tsx
+│   ├── SimpleLineChart.tsx
+│   └── SimpleBarChart.tsx
+├── DatePicker.tsx
+└── TimePicker.tsx
+```
+
+### Utilities:
+```
+src/utils/
+└── statsCalculations.ts    # Stats calculation functions
+```
+
+---
+
+## TODO - Future Enhancements:
 - [ ] Cycling activities
 - [ ] Swimming activities
-- [ ] Strength training activities
-- [ ] Activity statistics/charts
-- [ ] Export data functionality
+- [ ] Export data (CSV/JSON)
 - [ ] Dark/Light theme toggle
 - [ ] Push notifications
 - [ ] GPS tracking integration
+- [ ] Goal setting and tracking
+- [ ] Social features / sharing
+- [ ] Progress photos
 
 ---
 
@@ -82,7 +181,7 @@ Located in `frontend/`
 
 ### Backend:
 ```bash
-cd src/athlo
+cd athlo
 uvicorn athlo.api.main:app --reload --port 8000
 ```
 
@@ -97,30 +196,64 @@ http://localhost:8000/docs
 
 ---
 
-## Notes
-- Backend has CORS enabled for frontend access
-- Password minimum: 8 characters
-- API URL auto-switches based on platform (web vs Android emulator)
-- Node.js v20+ recommended (current setup works with v18.16+ with polyfills)
+## Tech Stack
+
+### Backend
+- Python 3.11+
+- FastAPI
+- Pydantic
+- JWT authentication
+- JSON file storage
+
+### Frontend
+- React Native / Expo SDK 54
+- TypeScript
+- React Navigation (Bottom Tabs + Native Stack)
+- Axios
+- AsyncStorage
+- react-native-gifted-charts
+- expo-linear-gradient
 
 ---
 
 ## Project Structure
 ```
 athlo/
-├── src/athlo/           # Backend (FastAPI)
-│   ├── api/             # Routes and schemas
-│   ├── models/          # Data models
-│   ├── repositories/    # Data persistence
-│   └── services/        # Business logic
-├── frontend/            # Frontend (React Native/Expo)
+├── src/athlo/              # Backend (FastAPI)
+│   ├── api/
+│   │   ├── routes/         # API routes
+│   │   │   ├── auth.py
+│   │   │   ├── activities.py
+│   │   │   ├── strength.py
+│   │   │   └── body.py
+│   │   ├── deps.py         # Dependencies
+│   │   └── main.py         # App entry
+│   ├── models/             # Pydantic models
+│   │   ├── activity.py
+│   │   ├── strength.py
+│   │   └── body.py
+│   └── config.py           # Settings
+├── frontend/               # Frontend (React Native/Expo)
 │   ├── src/
-│   │   ├── context/     # React contexts
-│   │   ├── navigation/  # Navigation setup
-│   │   ├── screens/     # App screens
-│   │   ├── services/    # API service
-│   │   └── types/       # TypeScript types
-│   ├── App.tsx          # App entry point
+│   │   ├── components/     # Reusable components
+│   │   ├── context/        # React contexts
+│   │   ├── navigation/     # Navigation setup
+│   │   ├── screens/        # App screens
+│   │   ├── services/       # API service
+│   │   ├── types/          # TypeScript types
+│   │   └── utils/          # Utility functions
+│   ├── App.tsx
 │   └── package.json
-└── data/                # JSON data storage
+└── data/                   # JSON data storage
+    └── users/              # Per-user data files
 ```
+
+---
+
+## Notes
+- Backend has CORS enabled for frontend access
+- Password minimum: 8 characters
+- API URL auto-switches based on platform (web vs Android emulator)
+- Node.js v18.16+ works (v20+ recommended)
+- All dates stored in ISO format
+- Measurements in metric units (km, kg, cm)
