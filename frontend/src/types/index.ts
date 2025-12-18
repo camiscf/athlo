@@ -58,3 +58,148 @@ export interface RunningActivityCreate {
   avg_heart_rate?: number;
   notes?: string;
 }
+
+// ==================== STRENGTH TRAINING TYPES ====================
+
+// Exercise from the exercise bank
+export interface Exercise {
+  id: string;
+  name: string;
+  muscle_group: string;
+  is_custom: boolean;
+  user_id: string | null;
+}
+
+export interface ExerciseCreate {
+  name: string;
+  muscle_group: string;
+}
+
+// Planned exercise in a division
+export interface PlannedExercise {
+  exercise_name: string;
+  muscle_group: string;
+  sets: number;
+  reps: string; // "10" or "8-12"
+  rest_seconds: number | null;
+  suggested_weight: number | null;
+  notes: string | null;
+  order: number;
+}
+
+export interface PlannedExerciseCreate {
+  exercise_name: string;
+  muscle_group: string;
+  sets: number;
+  reps: string;
+  rest_seconds?: number;
+  suggested_weight?: number;
+  notes?: string;
+  order?: number;
+}
+
+// Workout division
+export interface WorkoutDivision {
+  id: string;
+  user_id: string;
+  name: string;
+  exercises: PlannedExercise[];
+  is_active: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkoutDivisionCreate {
+  name: string;
+  exercises?: PlannedExerciseCreate[];
+  order?: number;
+}
+
+export interface WorkoutDivisionUpdate {
+  name?: string;
+  exercises?: PlannedExerciseCreate[];
+  is_active?: boolean;
+  order?: number;
+}
+
+// Exercise log (record of exercise performed)
+export interface ExerciseLog {
+  exercise_name: string;
+  muscle_group: string;
+  planned_sets: number | null;
+  planned_reps: string | null;
+  sets_completed: number;
+  reps_completed: string;
+  weight: number | null;
+  rpe: number | null;
+  notes: string | null;
+  previous_weight: number | null;
+  previous_reps: string | null;
+}
+
+export interface ExerciseLogCreate {
+  exercise_name: string;
+  muscle_group: string;
+  planned_sets?: number;
+  planned_reps?: string;
+  sets_completed: number;
+  reps_completed: string;
+  weight?: number;
+  rpe?: number;
+  notes?: string;
+}
+
+// Strength training activity
+export interface StrengthActivity {
+  id: string;
+  user_id: string;
+  title: string | null;
+  division_id: string | null;
+  division_name: string | null;
+  start_time: string;
+  exercises: ExerciseLog[];
+  duration: number | null;
+  duration_formatted: string | null;
+  effort: number | null;
+  notes: string | null;
+  total_sets: number;
+  total_exercises: number;
+  muscle_groups_worked: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StrengthActivityCreate {
+  title?: string;
+  division_id?: string;
+  division_name?: string;
+  start_time: string;
+  exercises?: ExerciseLogCreate[];
+  duration?: number;
+  effort?: number;
+  notes?: string;
+}
+
+export interface StrengthActivityUpdate {
+  title?: string;
+  division_id?: string;
+  division_name?: string;
+  start_time?: string;
+  exercises?: ExerciseLogCreate[];
+  duration?: number;
+  effort?: number;
+  notes?: string;
+}
+
+// Exercise history for progression
+export interface ExerciseHistory {
+  exercise_name: string;
+  records: {
+    date: string;
+    weight: number | null;
+    reps: string;
+    sets: number;
+    rpe: number | null;
+  }[];
+}

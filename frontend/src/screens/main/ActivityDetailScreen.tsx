@@ -201,18 +201,28 @@ export default function ActivityDetailScreen({ route, navigation }: ActivityDeta
           </View>
         )}
 
-        {/* Botão excluir */}
-        <TouchableOpacity
-          style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
-          onPress={handleDelete}
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.deleteButtonText}>Excluir Atividade</Text>
-          )}
-        </TouchableOpacity>
+        {/* Botões de ação */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('EditActivity', { activityId })}
+            disabled={isDeleting}
+          >
+            <Text style={styles.editButtonText}>Editar Atividade</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
+            onPress={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.deleteButtonText}>Excluir Atividade</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -323,13 +333,27 @@ const styles = StyleSheet.create({
     color: '#000000',
     lineHeight: 22,
   },
+  actionButtons: {
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 32,
+  },
+  editButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+  },
   deleteButton: {
     backgroundColor: '#FF3B30',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 32,
   },
   deleteButtonDisabled: {
     backgroundColor: '#FF8A80',

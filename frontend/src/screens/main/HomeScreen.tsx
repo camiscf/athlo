@@ -12,14 +12,18 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { RunningActivity } from '../../types';
+import { RunningActivity, StrengthActivity } from '../../types';
+
+type Activity = (RunningActivity & { type: 'running' }) | (StrengthActivity & { type: 'strength' });
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 380;
-  const [activities, setActivities] = useState<RunningActivity[]>([]);
+  const [runningActivities, setRunningActivities] = useState<RunningActivity[]>([]);
+  const [strengthActivities, setStrengthActivities] = useState<StrengthActivity[]>([]);
+  const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -29,8 +33,22 @@ export default function HomeScreen() {
     }
 
     try {
-      const data = await api.getRunningActivities();
-      setActivities(data);
+      const [runningData, strengthData] = await Promise.all([
+        api.getRunningActivities(),
+        api.getStrengthActivities(),
+      ]);
+
+      setRunningActivities(runningData);
+      setStrengthActivities(strengthData);
+
+      const runningWithType = runningData.map(a => ({ ...a, type: 'running' as const }));
+      const strengthWithType = strengthData.map(a => ({ ...a, type: 'strength' as const }));
+
+      const combined = [...runningWithType, ...strengthWithType].sort(
+        (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+      );
+
+      setAllActivities(combined);
     } catch (error) {
       console.error('Erro ao carregar atividades:', error);
     } finally {
@@ -45,10 +63,12 @@ export default function HomeScreen() {
     }, [loadActivities])
   );
 
-  // Calcular estatísticas
-  const totalDistance = activities.reduce((sum, a) => sum + (a.distance || 0), 0);
-  const totalDuration = activities.reduce((sum, a) => sum + (a.duration || 0), 0);
-  const totalActivities = activities.length;
+  // Calcular estatísticas de corrida
+  const totalDistance = runningActivities.reduce((sum, a) => sum + (a.distance || 0), 0);
+  const totalRunningDuration = runningActivities.reduce((sum, a) => sum + (a.duration || 0), 0);
+  const totalRunning = runningActivities.length;
+  const totalStrength = strengthActivities.length;
+  const totalActivities = totalRunning + totalStrength;
 
   // Atividades desta semana
   const now = new Date();
@@ -56,12 +76,13 @@ export default function HomeScreen() {
   startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const thisWeekActivities = activities.filter(a => new Date(a.start_time) >= startOfWeek);
-  const weekDistance = thisWeekActivities.reduce((sum, a) => sum + (a.distance || 0), 0);
-  const weekActivitiesCount = thisWeekActivities.length;
+  const thisWeekRunning = runningActivities.filter(a => new Date(a.start_time) >= startOfWeek);
+  const thisWeekStrength = strengthActivities.filter(a => new Date(a.start_time) >= startOfWeek);
+  const weekDistance = thisWeekRunning.reduce((sum, a) => sum + (a.distance || 0), 0);
+  const weekActivitiesCount = thisWeekRunning.length + thisWeekStrength.length;
 
-  // Últimas 3 atividades
-  const recentActivities = activities.slice(0, 3);
+  // Últimas 3 atividades (combinadas)
+  const recentActivities = allActivities.slice(0, 3);
 
   function formatDuration(seconds: number, short = false): string {
     const hours = Math.floor(seconds / 3600);
@@ -135,9 +156,16 @@ export default function HomeScreen() {
             <View style={styles.statCardSmall}>
               <Text style={styles.statIcon}>🏃</Text>
               <Text style={[styles.statValueSmall, isSmallScreen && styles.statValueSmallCompact]}>
-                {totalActivities}
+                {totalRunning}
               </Text>
               <Text style={styles.statLabelSmall}>corridas</Text>
+            </View>
+            <View style={styles.statCardSmall}>
+              <Text style={styles.statIcon}>💪</Text>
+              <Text style={[styles.statValueSmall, isSmallScreen && styles.statValueSmallCompact]}>
+                {totalStrength}
+              </Text>
+              <Text style={styles.statLabelSmall}>treinos</Text>
             </View>
             <View style={styles.statCardSmall}>
               <Text style={styles.statIcon}>📏</Text>
@@ -146,17 +174,6 @@ export default function HomeScreen() {
               </Text>
               <Text style={styles.statLabelSmall}>km</Text>
             </View>
-            <View style={styles.statCardSmall}>
-              <Text style={styles.statIcon}>⏱️</Text>
-              <Text
-                style={[styles.statValueSmall, isSmallScreen && styles.statValueSmallCompact]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {formatDuration(totalDuration, isSmallScreen)}
-              </Text>
-              <Text style={styles.statLabelSmall}>tempo</Text>
-            </View>
           </View>
         </View>
 
@@ -164,7 +181,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Atividades recentes</Text>
-            {activities.length > 3 && (
+            {allActivities.length > 3 && (
               <TouchableOpacity onPress={() => (navigation as any).navigate('Activities')}>
                 <Text style={styles.seeAll}>Ver todas</Text>
               </TouchableOpacity>
@@ -173,35 +190,57 @@ export default function HomeScreen() {
 
           {recentActivities.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🏃</Text>
+              <Text style={styles.emptyIcon}>📋</Text>
               <Text style={styles.emptyText}>Nenhuma atividade ainda</Text>
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => (navigation as any).navigate('AddActivity')}
               >
-                <Text style={styles.emptyButtonText}>Registrar primeira corrida</Text>
+                <Text style={styles.emptyButtonText}>Registrar primeira atividade</Text>
               </TouchableOpacity>
             </View>
           ) : (
             recentActivities.map((activity) => (
               <View key={activity.id} style={styles.activityCard}>
                 <View style={styles.activityHeader}>
-                  <Text style={styles.activityTitle} numberOfLines={1}>
-                    {activity.title || 'Corrida'}
-                  </Text>
+                  <View style={styles.activityTitleRow}>
+                    <Text style={styles.activityIcon}>
+                      {activity.type === 'strength' ? '💪' : '🏃'}
+                    </Text>
+                    <Text style={styles.activityTitle} numberOfLines={1}>
+                      {activity.type === 'strength'
+                        ? (activity.title || activity.division_name || 'Treino de Força')
+                        : (activity.title || 'Corrida')}
+                    </Text>
+                  </View>
                   <Text style={styles.activityDate}>{formatDate(activity.start_time)}</Text>
                 </View>
                 <View style={styles.activityStats}>
-                  {activity.distance !== null && (
-                    <Text style={styles.activityStat}>
-                      {activity.distance.toFixed(2)} km
-                    </Text>
-                  )}
-                  {activity.duration_formatted && (
-                    <Text style={styles.activityStat}>{activity.duration_formatted}</Text>
-                  )}
-                  {activity.pace_formatted && (
-                    <Text style={styles.activityStat}>{activity.pace_formatted}/km</Text>
+                  {activity.type === 'running' ? (
+                    <>
+                      {activity.distance !== null && (
+                        <Text style={styles.activityStat}>
+                          {activity.distance.toFixed(2)} km
+                        </Text>
+                      )}
+                      {activity.duration_formatted && (
+                        <Text style={styles.activityStat}>{activity.duration_formatted}</Text>
+                      )}
+                      {activity.pace_formatted && (
+                        <Text style={styles.activityStat}>{activity.pace_formatted}/km</Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.activityStatStrength}>
+                        {activity.exercises.length} exercícios
+                      </Text>
+                      {activity.duration && (
+                        <Text style={styles.activityStatStrength}>
+                          {formatDuration(activity.duration, true)}
+                        </Text>
+                      )}
+                    </>
                   )}
                 </View>
               </View>
@@ -338,12 +377,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  activityTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  activityIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
   activityTitle: {
     fontSize: 15,
     fontWeight: '600',
     color: '#000000',
     flex: 1,
-    marginRight: 8,
   },
   activityDate: {
     fontSize: 13,
@@ -356,6 +404,11 @@ const styles = StyleSheet.create({
   activityStat: {
     fontSize: 14,
     color: '#007AFF',
+    fontWeight: '500',
+  },
+  activityStatStrength: {
+    fontSize: 14,
+    color: '#34C759',
     fontWeight: '500',
   },
   emptyState: {

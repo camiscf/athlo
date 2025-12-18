@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,28 @@ import {
 } from 'react-native';
 import { api } from '../../services/api';
 import { RunningActivityCreate } from '../../types';
+import DatePicker from '../../components/DatePicker';
+import TimePicker from '../../components/TimePicker';
 
-export default function AddActivityScreen() {
+interface AddActivityScreenProps {
+  route?: {
+    params?: {
+      activityId?: string;
+    };
+  };
+  navigation?: any;
+}
+
+export default function AddActivityScreen({ route, navigation }: AddActivityScreenProps) {
+  const activityId = route?.params?.activityId;
+  const isEditMode = !!activityId;
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
   const isExtraLarge = width >= 1024;
 
   const [title, setTitle] = useState('');
+  const [activityDate, setActivityDate] = useState('');
+  const [activityTime, setActivityTime] = useState('');
   const [distance, setDistance] = useState('');
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -26,6 +41,60 @@ export default function AddActivityScreen() {
   const [effort, setEffort] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(isEditMode);
+
+  useEffect(() => {
+    if (isEditMode && activityId) {
+      loadActivity();
+    } else {
+      // Inicializar com data/hora atual para nova atividade
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      setActivityDate(`${year}-${month}-${day}`);
+      setActivityTime(`${hours}:${mins}`);
+    }
+  }, [activityId]);
+
+  async function loadActivity() {
+    try {
+      const activity = await api.getRunningActivity(activityId!);
+      setTitle(activity.title || '');
+
+      // Carregar data e hora da atividade
+      if (activity.start_time) {
+        const date = new Date(activity.start_time);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        setActivityDate(`${year}-${month}-${day}`);
+
+        const hours = String(date.getHours()).padStart(2, '0');
+        const mins = String(date.getMinutes()).padStart(2, '0');
+        setActivityTime(`${hours}:${mins}`);
+      }
+
+      setDistance(activity.distance?.toString() || '');
+      if (activity.duration) {
+        const h = Math.floor(activity.duration / 3600);
+        const m = Math.floor((activity.duration % 3600) / 60);
+        const s = activity.duration % 60;
+        setHours(h > 0 ? h.toString() : '');
+        setMinutes(m > 0 ? m.toString() : '');
+        setSeconds(s > 0 ? s.toString() : '');
+      }
+      setEffort(activity.effort || null);
+      setNotes(activity.notes || '');
+    } catch (error) {
+      showAlert('Erro', 'Não foi possível carregar a atividade.');
+      navigation?.goBack();
+    } finally {
+      setIsLoadingData(false);
+    }
+  }
 
   const effortLevels = [
     { value: 1, label: '1', description: 'Muito fácil' },
@@ -35,6 +104,22 @@ export default function AddActivityScreen() {
     { value: 9, label: '9', description: 'Máximo' },
   ];
 
+  function getActivityPeriod(hour: number): string {
+    if (hour >= 5 && hour < 12) return 'da manhã';
+    if (hour >= 12 && hour < 14) return 'na hora do almoço';
+    if (hour >= 14 && hour < 18) return 'de tarde';
+    return 'de noite';
+  }
+
+  function generateAutoTitle(): string {
+    const hour = activityTime ? parseInt(activityTime.split(':')[0]) : new Date().getHours();
+    return `Corrida ${getActivityPeriod(hour)}`;
+  }
+
+  function getTitlePlaceholder(): string {
+    return generateAutoTitle();
+  }
+
   function showAlert(title: string, message: string) {
     if (Platform.OS === 'web') {
       window.alert(`${title}\n\n${message}`);
@@ -43,6 +128,15 @@ export default function AddActivityScreen() {
 
   function resetForm() {
     setTitle('');
+    // Resetar para data/hora atual
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hrs = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    setActivityDate(`${year}-${month}-${day}`);
+    setActivityTime(`${hrs}:${mins}`);
     setDistance('');
     setHours('');
     setMinutes('');
@@ -76,13 +170,26 @@ export default function AddActivityScreen() {
     setIsLoading(true);
 
     try {
+      // Montar data/hora: usa informada ou atual
+      let startTime: Date;
+      if (activityDate) {
+        const [year, month, day] = activityDate.split('-').map(Number);
+        if (activityTime) {
+          const [hour, minute] = activityTime.split(':').map(Number);
+          startTime = new Date(year, month - 1, day, hour, minute);
+        } else {
+          startTime = new Date(year, month - 1, day, 12, 0); // meio-dia se não informar hora
+        }
+      } else {
+        startTime = new Date();
+      }
+
       const activityData: RunningActivityCreate = {
-        start_time: new Date().toISOString(),
+        start_time: startTime.toISOString(),
       };
 
-      if (title.trim()) {
-        activityData.title = title.trim();
-      }
+      // Usar título digitado ou gerar automático baseado no horário
+      activityData.title = title.trim() || generateAutoTitle();
 
       if (distanceNum > 0) {
         activityData.distance = distanceNum;
@@ -100,10 +207,15 @@ export default function AddActivityScreen() {
         activityData.notes = notes.trim();
       }
 
-      await api.createRunningActivity(activityData);
-
-      showAlert('Sucesso', 'Atividade registrada com sucesso!');
-      resetForm();
+      if (isEditMode && activityId) {
+        await api.updateRunningActivity(activityId, activityData);
+        showAlert('Sucesso', 'Atividade atualizada com sucesso!');
+        navigation?.goBack();
+      } else {
+        await api.createRunningActivity(activityData);
+        showAlert('Sucesso', 'Atividade registrada com sucesso!');
+        resetForm();
+      }
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Erro ao salvar atividade.';
       showAlert('Erro', message);
@@ -113,6 +225,14 @@ export default function AddActivityScreen() {
   }
 
   const containerMaxWidth = isExtraLarge ? 600 : isLargeScreen ? 500 : '100%';
+
+  if (isLoadingData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -130,15 +250,44 @@ export default function AddActivityScreen() {
       ]}>
         {/* Título */}
         <View style={styles.section}>
-          <Text style={styles.label}>Título (opcional)</Text>
+          <Text style={styles.label}>Título</Text>
           <TextInput
             style={styles.input}
-            placeholder="Ex: Corrida matinal no parque"
+            placeholder={getTitlePlaceholder()}
             placeholderTextColor="#8E8E93"
             value={title}
             onChangeText={setTitle}
             editable={!isLoading}
           />
+        </View>
+
+        {/* Data e Hora */}
+        <View style={[
+          styles.rowContainer,
+          isLargeScreen && styles.rowContainerLarge,
+        ]}>
+          <View style={[
+            styles.section,
+            isLargeScreen && styles.sectionHalf,
+          ]}>
+            <Text style={styles.label}>Data</Text>
+            <DatePicker
+              value={activityDate}
+              onChange={setActivityDate}
+              disabled={isLoading}
+            />
+          </View>
+          <View style={[
+            styles.section,
+            isLargeScreen && styles.sectionHalf,
+          ]}>
+            <Text style={styles.label}>Hora</Text>
+            <TimePicker
+              value={activityTime}
+              onChange={setActivityTime}
+              disabled={isLoading}
+            />
+          </View>
         </View>
 
         {/* Distância e Tempo em row no desktop */}
@@ -281,7 +430,9 @@ export default function AddActivityScreen() {
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Salvar Atividade</Text>
+            <Text style={styles.submitButtonText}>
+              {isEditMode ? 'Atualizar Atividade' : 'Salvar Atividade'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -292,6 +443,12 @@ export default function AddActivityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F2F2F7',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#F2F2F7',
   },
   scrollContent: {
@@ -327,6 +484,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000',
     marginBottom: 8,
+  },
+  hint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: -12,
+    marginBottom: 16,
+    marginLeft: 4,
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -365,22 +529,23 @@ const styles = StyleSheet.create({
   },
   effortContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 6,
   },
   effortContainerLarge: {
-    flexWrap: 'nowrap',
+    gap: 10,
   },
   effortButton: {
     flex: 1,
-    minWidth: 60,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+    minHeight: 70,
   },
   effortButtonLarge: {
     paddingVertical: 16,

@@ -29,8 +29,7 @@ export default function LoginScreen({ navigation }: AuthStackScreenProps<'Login'
     try {
       await login(email.trim(), password);
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao fazer login. Tente novamente.';
-      Alert.alert('Erro', message);
+      Alert.alert('Erro', 'E-mail ou senha incorretos.');
     } finally {
       setIsLoading(false);
     }

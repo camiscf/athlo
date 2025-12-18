@@ -137,3 +137,168 @@ class RunningActivityResponse(BaseModel):
 
     created_at: datetime
     updated_at: datetime
+
+
+# ==================== STRENGTH TRAINING SCHEMAS ====================
+
+# Exercise schemas
+class ExerciseResponse(BaseModel):
+    """Exercise from the exercise bank."""
+
+    id: UUID
+    name: str
+    muscle_group: str
+    is_custom: bool
+    user_id: UUID | None
+
+
+class ExerciseCreate(BaseModel):
+    """Create a custom exercise."""
+
+    name: str = Field(min_length=1, max_length=100)
+    muscle_group: str
+
+
+# Planned Exercise schemas (for divisions)
+class PlannedExerciseCreate(BaseModel):
+    """Planned exercise in a workout division."""
+
+    exercise_name: str
+    muscle_group: str
+    sets: int = Field(ge=1, le=20)
+    reps: str  # "10" or "8-12"
+    rest_seconds: int | None = None
+    suggested_weight: float | None = None
+    notes: str | None = None
+    order: int = 0
+
+
+class PlannedExerciseResponse(BaseModel):
+    """Planned exercise response."""
+
+    exercise_name: str
+    muscle_group: str
+    sets: int
+    reps: str
+    rest_seconds: int | None
+    suggested_weight: float | None
+    notes: str | None
+    order: int
+
+
+# Workout Division schemas
+class WorkoutDivisionCreate(BaseModel):
+    """Create a workout division."""
+
+    name: str = Field(min_length=1, max_length=50)
+    exercises: list[PlannedExerciseCreate] = []
+    order: int = 0
+
+
+class WorkoutDivisionUpdate(BaseModel):
+    """Update a workout division."""
+
+    name: str | None = Field(None, min_length=1, max_length=50)
+    exercises: list[PlannedExerciseCreate] | None = None
+    is_active: bool | None = None
+    order: int | None = None
+
+
+class WorkoutDivisionResponse(BaseModel):
+    """Workout division response."""
+
+    id: UUID
+    user_id: UUID
+    name: str
+    exercises: list[PlannedExerciseResponse]
+    is_active: bool
+    order: int
+    created_at: datetime
+    updated_at: datetime
+
+
+# Exercise Log schemas (for recording workouts)
+class ExerciseLogCreate(BaseModel):
+    """Record of an exercise performed."""
+
+    exercise_name: str
+    muscle_group: str
+    planned_sets: int | None = None
+    planned_reps: str | None = None
+    sets_completed: int = Field(ge=0, le=20)
+    reps_completed: str
+    weight: float | None = None
+    rpe: int | None = Field(None, ge=1, le=10)
+    notes: str | None = None
+
+
+class ExerciseLogResponse(BaseModel):
+    """Exercise log response with history."""
+
+    exercise_name: str
+    muscle_group: str
+    planned_sets: int | None
+    planned_reps: str | None
+    sets_completed: int
+    reps_completed: str
+    weight: float | None
+    rpe: int | None
+    notes: str | None
+    previous_weight: float | None
+    previous_reps: str | None
+
+
+# Strength Activity schemas
+class StrengthActivityCreate(BaseModel):
+    """Create a strength training activity."""
+
+    title: str | None = None
+    division_id: UUID | None = None
+    division_name: str | None = None
+    start_time: datetime
+    exercises: list[ExerciseLogCreate] = []
+    duration: float | None = None  # seconds
+    effort: int | None = Field(None, ge=1, le=10)
+    notes: str | None = None
+
+
+class StrengthActivityUpdate(BaseModel):
+    """Update a strength training activity."""
+
+    title: str | None = None
+    division_id: UUID | None = None
+    division_name: str | None = None
+    start_time: datetime | None = None
+    exercises: list[ExerciseLogCreate] | None = None
+    duration: float | None = None
+    effort: int | None = Field(None, ge=1, le=10)
+    notes: str | None = None
+
+
+class StrengthActivityResponse(BaseModel):
+    """Strength training activity response."""
+
+    id: UUID
+    user_id: UUID
+    title: str | None
+    division_id: UUID | None
+    division_name: str | None
+    start_time: datetime
+    exercises: list[ExerciseLogResponse]
+    duration: float | None
+    duration_formatted: str | None
+    effort: int | None
+    notes: str | None
+    total_sets: int
+    total_exercises: int
+    muscle_groups_worked: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+# Exercise history for progression tracking
+class ExerciseHistoryResponse(BaseModel):
+    """History of an exercise for progression tracking."""
+
+    exercise_name: str
+    records: list[dict]  # List of {date, weight, reps, rpe}

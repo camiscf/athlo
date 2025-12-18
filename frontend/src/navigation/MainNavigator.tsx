@@ -8,6 +8,11 @@ import ActivitiesScreen from '../screens/main/ActivitiesScreen';
 import AddActivityScreen from '../screens/main/AddActivityScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import ActivityDetailScreen from '../screens/main/ActivityDetailScreen';
+import DivisionsScreen from '../screens/main/DivisionsScreen';
+import EditDivisionScreen from '../screens/main/EditDivisionScreen';
+import RecordStrengthWorkoutScreen from '../screens/main/RecordStrengthWorkoutScreen';
+import StrengthActivityDetailScreen from '../screens/main/StrengthActivityDetailScreen';
+import EditStrengthWorkoutScreen from '../screens/main/EditStrengthWorkoutScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -65,8 +70,16 @@ function TabNavigator() {
         name="AddActivity"
         component={AddActivityScreen}
         options={{
-          title: 'Nova',
-          tabBarIcon: ({ color }) => <TabIcon name="plus" color={color} />,
+          title: 'Corrida',
+          tabBarIcon: ({ color }) => <TabIcon name="run" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Divisions"
+        component={DivisionsScreen}
+        options={{
+          title: 'Força',
+          tabBarIcon: ({ color }) => <TabIcon name="strength" color={color} />,
         }}
       />
       <Tab.Screen
@@ -107,6 +120,46 @@ export default function MainNavigator() {
           headerBackTitle: 'Voltar',
         }}
       />
+      <Stack.Screen
+        name="EditActivity"
+        component={AddActivityScreen}
+        options={{
+          title: 'Editar Atividade',
+          headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="EditDivision"
+        component={EditDivisionScreen}
+        options={({ route }: any) => ({
+          title: route.params?.divisionId ? 'Editar Divisão' : 'Nova Divisão',
+          headerBackTitle: 'Voltar',
+        })}
+      />
+      <Stack.Screen
+        name="RecordStrengthWorkout"
+        component={RecordStrengthWorkoutScreen}
+        options={{
+          title: 'Registrar Treino',
+          headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="StrengthActivityDetail"
+        component={StrengthActivityDetailScreen}
+        options={{
+          title: 'Detalhes do Treino',
+          headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="EditStrengthWorkout"
+        component={EditStrengthWorkoutScreen}
+        options={{
+          title: 'Editar Treino',
+          headerBackTitle: 'Voltar',
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -115,7 +168,8 @@ function TabIcon({ name, color }: { name: string; color: string }) {
   const icons: Record<string, string> = {
     home: '🏠',
     list: '📋',
-    plus: '➕',
+    run: '🏃',
+    strength: '💪',
     user: '👤',
   };
 

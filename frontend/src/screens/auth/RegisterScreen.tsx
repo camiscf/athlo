@@ -103,6 +103,7 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
               autoComplete="new-password"
               editable={!isLoading}
             />
+            <Text style={styles.passwordHint}>Mínimo de 8 caracteres</Text>
             <TextInput
               style={styles.input}
               placeholder="Confirmar Senha"
@@ -185,6 +186,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
     marginBottom: 12,
+  },
+  passwordHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: -8,
+    marginBottom: 12,
+    marginLeft: 4,
   },
   button: {
     backgroundColor: '#007AFF',

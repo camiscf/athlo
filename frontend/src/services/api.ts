@@ -7,6 +7,15 @@ import {
   RegisterRequest,
   RunningActivity,
   RunningActivityCreate,
+  Exercise,
+  ExerciseCreate,
+  WorkoutDivision,
+  WorkoutDivisionCreate,
+  WorkoutDivisionUpdate,
+  StrengthActivity,
+  StrengthActivityCreate,
+  StrengthActivityUpdate,
+  ExerciseHistory,
 } from '../types';
 
 import { Platform } from 'react-native';
@@ -161,6 +170,86 @@ class ApiService {
 
   async deleteRunningActivity(id: string): Promise<void> {
     await this.client.delete(`/activities/running/${id}`);
+  }
+
+  // ==================== STRENGTH TRAINING ====================
+
+  // Exercises
+  async getExercises(muscleGroup?: string): Promise<Exercise[]> {
+    const params = muscleGroup ? { muscle_group: muscleGroup } : undefined;
+    const response = await this.client.get<Exercise[]>('/strength/exercises', { params });
+    return response.data;
+  }
+
+  async getMuscleGroups(): Promise<string[]> {
+    const response = await this.client.get<string[]>('/strength/muscle-groups');
+    return response.data;
+  }
+
+  async createCustomExercise(data: ExerciseCreate): Promise<Exercise> {
+    const response = await this.client.post<Exercise>('/strength/exercises', data);
+    return response.data;
+  }
+
+  async deleteCustomExercise(id: string): Promise<void> {
+    await this.client.delete(`/strength/exercises/${id}`);
+  }
+
+  // Workout Divisions
+  async getWorkoutDivisions(): Promise<WorkoutDivision[]> {
+    const response = await this.client.get<WorkoutDivision[]>('/strength/divisions');
+    return response.data;
+  }
+
+  async getWorkoutDivision(id: string): Promise<WorkoutDivision> {
+    const response = await this.client.get<WorkoutDivision>(`/strength/divisions/${id}`);
+    return response.data;
+  }
+
+  async createWorkoutDivision(data: WorkoutDivisionCreate): Promise<WorkoutDivision> {
+    const response = await this.client.post<WorkoutDivision>('/strength/divisions', data);
+    return response.data;
+  }
+
+  async updateWorkoutDivision(id: string, data: WorkoutDivisionUpdate): Promise<WorkoutDivision> {
+    const response = await this.client.put<WorkoutDivision>(`/strength/divisions/${id}`, data);
+    return response.data;
+  }
+
+  async deleteWorkoutDivision(id: string): Promise<void> {
+    await this.client.delete(`/strength/divisions/${id}`);
+  }
+
+  // Strength Activities
+  async getStrengthActivities(params?: { limit?: number; offset?: number }): Promise<StrengthActivity[]> {
+    const response = await this.client.get<StrengthActivity[]>('/strength/activities', { params });
+    return response.data;
+  }
+
+  async getStrengthActivity(id: string): Promise<StrengthActivity> {
+    const response = await this.client.get<StrengthActivity>(`/strength/activities/${id}`);
+    return response.data;
+  }
+
+  async createStrengthActivity(data: StrengthActivityCreate): Promise<StrengthActivity> {
+    const response = await this.client.post<StrengthActivity>('/strength/activities', data);
+    return response.data;
+  }
+
+  async updateStrengthActivity(id: string, data: StrengthActivityUpdate): Promise<StrengthActivity> {
+    const response = await this.client.put<StrengthActivity>(`/strength/activities/${id}`, data);
+    return response.data;
+  }
+
+  async deleteStrengthActivity(id: string): Promise<void> {
+    await this.client.delete(`/strength/activities/${id}`);
+  }
+
+  // Exercise History
+  async getExerciseHistory(exerciseName: string, limit?: number): Promise<ExerciseHistory> {
+    const params = limit ? { limit } : undefined;
+    const response = await this.client.get<ExerciseHistory>(`/strength/history/${encodeURIComponent(exerciseName)}`, { params });
+    return response.data;
   }
 }
 

@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { api } from '../../services/api';
-import { RunningActivity } from '../../types';
+import { RunningActivity, StrengthActivity } from '../../types';
+
+type Activity = (RunningActivity & { type: 'running' }) | (StrengthActivity & { type: 'strength' });
 
 export default function ActivitiesScreen() {
   const navigation = useNavigation();
-  const [activities, setActivities] = useState<RunningActivity[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -24,8 +26,19 @@ export default function ActivitiesScreen() {
     }
 
     try {
-      const data = await api.getRunningActivities();
-      setActivities(data);
+      const [runningData, strengthData] = await Promise.all([
+        api.getRunningActivities(),
+        api.getStrengthActivities(),
+      ]);
+
+      const runningWithType = runningData.map(a => ({ ...a, type: 'running' as const }));
+      const strengthWithType = strengthData.map(a => ({ ...a, type: 'strength' as const }));
+
+      const combined = [...runningWithType, ...strengthWithType].sort(
+        (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+      );
+
+      setActivities(combined);
     } catch (error) {
       console.error('Erro ao carregar atividades:', error);
     } finally {
@@ -67,21 +80,93 @@ export default function ActivitiesScreen() {
     return '#FF3B30';
   }
 
-  function handleActivityPress(activityId: string) {
-    (navigation as any).navigate('ActivityDetail', { activityId });
+  function formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}min`;
+    }
+    return `${minutes}min`;
   }
 
-  function renderActivityCard({ item }: { item: RunningActivity }) {
+  function handleActivityPress(item: Activity) {
+    if (item.type === 'running') {
+      (navigation as any).navigate('ActivityDetail', { activityId: item.id });
+    } else {
+      (navigation as any).navigate('StrengthActivityDetail', { activityId: item.id });
+    }
+  }
+
+  function renderActivityCard({ item }: { item: Activity }) {
+    if (item.type === 'strength') {
+      return (
+        <TouchableOpacity
+          style={styles.card}
+          activeOpacity={0.7}
+          onPress={() => handleActivityPress(item)}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.titleRow}>
+              <Text style={styles.activityIcon}>💪</Text>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {item.title || item.division_name || 'Treino de Força'}
+              </Text>
+            </View>
+            <Text style={styles.cardDate}>{formatDate(item.start_time)}</Text>
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <Text style={styles.statValueStrength}>{item.exercises.length}</Text>
+              <Text style={styles.statLabel}>exercícios</Text>
+            </View>
+
+            {item.duration && (
+              <View style={styles.stat}>
+                <Text style={styles.statValueStrength}>{formatDuration(item.duration)}</Text>
+                <Text style={styles.statLabel}>duração</Text>
+              </View>
+            )}
+          </View>
+
+          {item.effort && (
+            <View style={styles.effortRow}>
+              <View
+                style={[
+                  styles.effortBadge,
+                  { backgroundColor: getEffortColor(item.effort) },
+                ]}
+              >
+                <Text style={styles.effortText}>
+                  {getEffortLabel(item.effort)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {item.notes && (
+            <Text style={styles.notes} numberOfLines={2}>
+              {item.notes}
+            </Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+
+    // Running activity
     return (
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.7}
-        onPress={() => handleActivityPress(item.id)}
+        onPress={() => handleActivityPress(item)}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {item.title || 'Corrida'}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.activityIcon}>🏃</Text>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.title || 'Corrida'}
+            </Text>
+          </View>
           <Text style={styles.cardDate}>{formatDate(item.start_time)}</Text>
         </View>
 
@@ -135,10 +220,10 @@ export default function ActivitiesScreen() {
   function renderEmptyList() {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>🏃</Text>
+        <Text style={styles.emptyIcon}>📋</Text>
         <Text style={styles.emptyTitle}>Nenhuma atividade</Text>
         <Text style={styles.emptyDescription}>
-          Registre sua primeira corrida na aba "Nova"
+          Registre uma corrida ou treino de força
         </Text>
       </View>
     );
@@ -209,12 +294,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  activityIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
   cardTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#000000',
     flex: 1,
-    marginRight: 8,
   },
   cardDate: {
     fontSize: 13,
@@ -231,6 +325,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#007AFF',
+  },
+  statValueStrength: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#34C759',
   },
   statLabel: {
     fontSize: 12,

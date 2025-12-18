@@ -12,7 +12,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Activities: undefined;
-  AddActivity: undefined;
+  AddActivity: { activityId?: string } | undefined;
   Profile: undefined;
   ActivityDetail: { activityId: string };
 };

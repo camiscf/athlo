@@ -30,53 +30,51 @@ Located in `src/athlo/`
 
 ---
 
-## Frontend Status: IN PROGRESS
+## Frontend Status: FUNCTIONAL MVP
 Located in `frontend/`
 
 ### Completed:
-1. Expo project created with TypeScript
-2. Dependencies installed:
-   - @react-navigation/native, native-stack, bottom-tabs
-   - react-native-screens, react-native-safe-area-context
-   - axios, @react-native-async-storage/async-storage
-3. Project structure created:
-   - `src/types/index.ts` - TypeScript types for User, Activity, Auth
+1. ✅ Expo project with TypeScript
+2. ✅ Dependencies (navigation, axios, async-storage)
+3. ✅ Project structure:
+   - `src/types/index.ts` - TypeScript types
    - `src/services/api.ts` - API service with auth token handling
-   - `src/context/AuthContext.tsx` - Authentication context provider
+   - `src/context/AuthContext.tsx` - Authentication context
+4. ✅ Navigation:
+   - `src/navigation/AuthNavigator.tsx` - Auth Stack
+   - `src/navigation/MainNavigator.tsx` - Tab + Stack Navigator
+   - `src/navigation/RootNavigator.tsx` - Root with auth state switch
+5. ✅ Authentication Screens:
+   - `src/screens/auth/LoginScreen.tsx` - Login with email/password
+   - `src/screens/auth/RegisterScreen.tsx` - User registration
+6. ✅ Main App Screens:
+   - `src/screens/main/HomeScreen.tsx` - Dashboard with stats
+   - `src/screens/main/ActivitiesScreen.tsx` - List of activities
+   - `src/screens/main/AddActivityScreen.tsx` - Form to log activity
+   - `src/screens/main/ProfileScreen.tsx` - User profile with logout
+   - `src/screens/main/ActivityDetailScreen.tsx` - Activity details with delete
 
-### TODO - Frontend Screens:
-1. **Authentication Screens**
-   - [ ] LoginScreen - Email/password login
-   - [ ] RegisterScreen - New user registration
+### Features Working:
+- ✅ User registration and login
+- ✅ Logout functionality
+- ✅ Create running activity (distance, time, effort, notes)
+- ✅ List all activities
+- ✅ View activity details
+- ✅ Delete activity
+- ✅ Dashboard with weekly and total stats
+- ✅ Responsive design for web/mobile
 
-2. **Main App Screens (Tab Navigation)**
-   - [ ] HomeScreen - Dashboard with recent activities summary
-   - [ ] ActivitiesScreen - List of all running activities
-   - [ ] AddActivityScreen - Form to log new running activity
-   - [ ] ProfileScreen - User profile and settings
-
-3. **Activity Detail Screens**
-   - [ ] ActivityDetailScreen - View single activity details
-   - [ ] EditActivityScreen - Edit existing activity
-
-### TODO - Navigation Setup:
-- [ ] Auth Stack (Login, Register)
-- [ ] Main Tab Navigator (Home, Activities, Add, Profile)
-- [ ] Root navigator that switches based on auth state
-
-### TODO - Components:
-- [ ] ActivityCard - Display activity in list
-- [ ] StatCard - Display stats on dashboard
-- [ ] Input components with validation
-- [ ] Loading spinner overlay
-
-### TODO - Features to Add Later:
+### TODO - Future Enhancements:
+- [ ] Edit existing activity
+- [ ] Date picker for activity date
 - [ ] Cycling activities
 - [ ] Swimming activities
 - [ ] Strength training activities
 - [ ] Activity statistics/charts
 - [ ] Export data functionality
 - [ ] Dark/Light theme toggle
+- [ ] Push notifications
+- [ ] GPS tracking integration
 
 ---
 
@@ -91,8 +89,7 @@ uvicorn athlo.api.main:app --reload --port 8000
 ### Frontend:
 ```bash
 cd frontend
-npm start
-# Then press 'a' for Android or 'i' for iOS
+npx expo start --web --clear
 ```
 
 ### API Docs:
@@ -101,8 +98,29 @@ http://localhost:8000/docs
 ---
 
 ## Notes
-- Node.js version warning: Current v18.16.1, recommended v20+
-- npm registry was changed to official: https://registry.npmjs.org/
-- For Android emulator, API URL should be: http://10.0.2.2:8000
-- For iOS simulator: http://localhost:8000
-- For physical device: Use your computer's local IP address
+- Backend has CORS enabled for frontend access
+- Password minimum: 8 characters
+- API URL auto-switches based on platform (web vs Android emulator)
+- Node.js v20+ recommended (current setup works with v18.16+ with polyfills)
+
+---
+
+## Project Structure
+```
+athlo/
+├── src/athlo/           # Backend (FastAPI)
+│   ├── api/             # Routes and schemas
+│   ├── models/          # Data models
+│   ├── repositories/    # Data persistence
+│   └── services/        # Business logic
+├── frontend/            # Frontend (React Native/Expo)
+│   ├── src/
+│   │   ├── context/     # React contexts
+│   │   ├── navigation/  # Navigation setup
+│   │   ├── screens/     # App screens
+│   │   ├── services/    # API service
+│   │   └── types/       # TypeScript types
+│   ├── App.tsx          # App entry point
+│   └── package.json
+└── data/                # JSON data storage
+```
