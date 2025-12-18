@@ -1,10 +1,12 @@
 import React from 'react';
-import { Text, Platform, TouchableOpacity, View } from 'react-native';
+import { Text, Platform, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 import { MainTabParamList } from './types';
 import { useAuth } from '../context/AuthContext';
+import { useColors } from '../context/ThemeContext';
 import HomeScreen from '../screens/main/HomeScreen';
 import ActivitiesScreen from '../screens/main/ActivitiesScreen';
 import AddActivityScreen from '../screens/main/AddActivityScreen';
@@ -26,6 +28,7 @@ const Stack = createNativeStackNavigator();
 function ProfileHeaderButton() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const theme = useColors();
 
   return (
     <TouchableOpacity
@@ -33,14 +36,14 @@ function ProfileHeaderButton() {
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.accent.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 8,
       }}
       onPress={() => navigation.navigate('Profile')}
     >
-      <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF' }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text.primary }}>
         {user?.name?.charAt(0).toUpperCase() || '?'}
       </Text>
     </TouchableOpacity>
@@ -48,15 +51,17 @@ function ProfileHeaderButton() {
 }
 
 function TabNavigator() {
+  const theme = useColors();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: true,
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: theme.accent.primary,
+        tabBarInactiveTintColor: theme.text.tertiary,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E5E5EA',
+          backgroundColor: theme.background.secondary,
+          borderTopColor: theme.border.primary,
           borderTopWidth: 1,
           height: 85,
           paddingBottom: Platform.OS === 'ios' ? 25 : 15,
@@ -72,9 +77,9 @@ function TabNavigator() {
         },
         tabBarShowLabel: true,
         headerStyle: {
-          backgroundColor: '#007AFF',
+          backgroundColor: theme.background.secondary,
         },
-        headerTintColor: '#FFFFFF',
+        headerTintColor: theme.text.primary,
         headerTitleStyle: {
           fontWeight: '600',
         },
@@ -126,15 +131,20 @@ function TabNavigator() {
 }
 
 export default function MainNavigator() {
+  const theme = useColors();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#007AFF',
+          backgroundColor: theme.background.secondary,
         },
-        headerTintColor: '#FFFFFF',
+        headerTintColor: theme.text.primary,
         headerTitleStyle: {
           fontWeight: '600',
+        },
+        contentStyle: {
+          backgroundColor: theme.background.primary,
         },
       }}
     >
@@ -229,13 +239,12 @@ export default function MainNavigator() {
 
 function TabIcon({ name, color }: { name: string; color: string }) {
   const icons: Record<string, string> = {
-    home: '🏠',
-    list: '📋',
-    run: '🏃',
-    strength: '💪',
-    body: '⚖️',
-    user: '👤',
+    home: 'home',
+    list: 'layers',
+    run: 'zap',
+    strength: 'target',
+    body: 'user',
   };
 
-  return <Text style={{ fontSize: 20, color }}>{icons[name] || '•'}</Text>;
+  return <Feather name={(icons[name] || 'circle') as any} size={22} color={color} />;
 }

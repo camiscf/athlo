@@ -9,6 +9,8 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { RunningActivity, StrengthActivity } from '../../types';
 
@@ -16,6 +18,7 @@ type Activity = (RunningActivity & { type: 'running' }) | (StrengthActivity & { 
 
 export default function ActivitiesScreen() {
   const navigation = useNavigation();
+  const theme = useColors();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -72,12 +75,12 @@ export default function ActivitiesScreen() {
   }
 
   function getEffortColor(effort: number | null | undefined): string {
-    if (!effort) return '#8E8E93';
-    if (effort <= 2) return '#34C759';
+    if (!effort) return theme.text.secondary;
+    if (effort <= 2) return theme.semantic.success;
     if (effort <= 4) return '#30D158';
-    if (effort <= 6) return '#FF9500';
+    if (effort <= 6) return theme.semantic.warning;
     if (effort <= 8) return '#FF6B35';
-    return '#FF3B30';
+    return theme.semantic.error;
   }
 
   function formatDuration(seconds: number): string {
@@ -101,30 +104,36 @@ export default function ActivitiesScreen() {
     if (item.type === 'strength') {
       return (
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, { backgroundColor: theme.background.secondary }]}
           activeOpacity={0.7}
           onPress={() => handleActivityPress(item)}
         >
           <View style={styles.cardHeader}>
             <View style={styles.titleRow}>
-              <Text style={styles.activityIcon}>💪</Text>
-              <Text style={styles.cardTitle} numberOfLines={1}>
+              <Feather name="target" size={16} color={theme.accent.primary} style={styles.activityIcon} />
+              <Text style={[styles.cardTitle, { color: theme.text.primary }]} numberOfLines={1}>
                 {item.title || item.division_name || 'Treino de Força'}
               </Text>
             </View>
-            <Text style={styles.cardDate}>{formatDate(item.start_time)}</Text>
+            <Text style={[styles.cardDate, { color: theme.text.secondary }]}>
+              {formatDate(item.start_time)}
+            </Text>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <Text style={styles.statValueStrength}>{item.exercises.length}</Text>
-              <Text style={styles.statLabel}>exercícios</Text>
+              <Text style={[styles.statValueStrength, { color: theme.semantic.success }]}>
+                {item.exercises.length}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text.secondary }]}>exercícios</Text>
             </View>
 
             {item.duration && (
               <View style={styles.stat}>
-                <Text style={styles.statValueStrength}>{formatDuration(item.duration)}</Text>
-                <Text style={styles.statLabel}>duração</Text>
+                <Text style={[styles.statValueStrength, { color: theme.semantic.success }]}>
+                  {formatDuration(item.duration)}
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.text.secondary }]}>duração</Text>
               </View>
             )}
           </View>
@@ -137,7 +146,7 @@ export default function ActivitiesScreen() {
                   { backgroundColor: getEffortColor(item.effort) },
                 ]}
               >
-                <Text style={styles.effortText}>
+                <Text style={[styles.effortText, { color: theme.text.primary }]}>
                   {getEffortLabel(item.effort)}
                 </Text>
               </View>
@@ -145,7 +154,7 @@ export default function ActivitiesScreen() {
           )}
 
           {item.notes && (
-            <Text style={styles.notes} numberOfLines={2}>
+            <Text style={[styles.notes, { color: theme.text.secondary }]} numberOfLines={2}>
               {item.notes}
             </Text>
           )}
@@ -156,39 +165,47 @@ export default function ActivitiesScreen() {
     // Running activity
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: theme.background.secondary }]}
         activeOpacity={0.7}
         onPress={() => handleActivityPress(item)}
       >
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
-            <Text style={styles.activityIcon}>🏃</Text>
-            <Text style={styles.cardTitle} numberOfLines={1}>
+            <Feather name="zap" size={16} color={theme.accent.primary} style={styles.activityIcon} />
+            <Text style={[styles.cardTitle, { color: theme.text.primary }]} numberOfLines={1}>
               {item.title || 'Corrida'}
             </Text>
           </View>
-          <Text style={styles.cardDate}>{formatDate(item.start_time)}</Text>
+          <Text style={[styles.cardDate, { color: theme.text.secondary }]}>
+            {formatDate(item.start_time)}
+          </Text>
         </View>
 
         <View style={styles.statsRow}>
           {item.distance !== null && (
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{item.distance.toFixed(2)}</Text>
-              <Text style={styles.statLabel}>km</Text>
+              <Text style={[styles.statValue, { color: theme.accent.primary }]}>
+                {item.distance.toFixed(2)}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text.secondary }]}>km</Text>
             </View>
           )}
 
           {item.duration_formatted && (
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{item.duration_formatted}</Text>
-              <Text style={styles.statLabel}>tempo</Text>
+              <Text style={[styles.statValue, { color: theme.accent.primary }]}>
+                {item.duration_formatted}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text.secondary }]}>tempo</Text>
             </View>
           )}
 
           {item.pace_formatted && (
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{item.pace_formatted}</Text>
-              <Text style={styles.statLabel}>pace</Text>
+              <Text style={[styles.statValue, { color: theme.accent.primary }]}>
+                {item.pace_formatted}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text.secondary }]}>pace</Text>
             </View>
           )}
         </View>
@@ -201,7 +218,7 @@ export default function ActivitiesScreen() {
                 { backgroundColor: getEffortColor(item.effort) },
               ]}
             >
-              <Text style={styles.effortText}>
+              <Text style={[styles.effortText, { color: theme.text.primary }]}>
                 {getEffortLabel(item.effort)}
               </Text>
             </View>
@@ -209,7 +226,7 @@ export default function ActivitiesScreen() {
         )}
 
         {item.notes && (
-          <Text style={styles.notes} numberOfLines={2}>
+          <Text style={[styles.notes, { color: theme.text.secondary }]} numberOfLines={2}>
             {item.notes}
           </Text>
         )}
@@ -220,9 +237,9 @@ export default function ActivitiesScreen() {
   function renderEmptyList() {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>📋</Text>
-        <Text style={styles.emptyTitle}>Nenhuma atividade</Text>
-        <Text style={styles.emptyDescription}>
+        <Feather name="inbox" size={48} color={theme.text.tertiary} style={styles.emptyIcon} />
+        <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>Nenhuma atividade</Text>
+        <Text style={[styles.emptyDescription, { color: theme.text.secondary }]}>
           Registre uma corrida ou treino de força
         </Text>
       </View>
@@ -231,14 +248,14 @@ export default function ActivitiesScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <FlatList
         data={activities}
         keyExtractor={(item) => item.id}
@@ -251,8 +268,8 @@ export default function ActivitiesScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadActivities(true)}
-            colors={['#007AFF']}
-            tintColor="#007AFF"
+            colors={[theme.accent.primary]}
+            tintColor={theme.accent.primary}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -264,13 +281,11 @@ export default function ActivitiesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   listContent: {
     padding: 16,
@@ -283,7 +298,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -301,18 +315,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   activityIcon: {
-    fontSize: 16,
     marginRight: 8,
   },
   cardTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
     flex: 1,
   },
   cardDate: {
     fontSize: 13,
-    color: '#8E8E93',
   },
   statsRow: {
     flexDirection: 'row',
@@ -324,16 +335,13 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#007AFF',
   },
   statValueStrength: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#34C759',
   },
   statLabel: {
     fontSize: 12,
-    color: '#8E8E93',
     marginTop: 2,
   },
   effortRow: {
@@ -348,12 +356,10 @@ const styles = StyleSheet.create({
   effortText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   notes: {
     marginTop: 12,
     fontSize: 14,
-    color: '#8E8E93',
     fontStyle: 'italic',
   },
   emptyContainer: {
@@ -361,18 +367,15 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   emptyIcon: {
-    fontSize: 64,
     marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 15,
-    color: '#8E8E93',
     textAlign: 'center',
   },
 });

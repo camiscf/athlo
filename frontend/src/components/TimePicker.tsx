@@ -7,6 +7,8 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../context/ThemeContext';
 
 interface TimePickerProps {
   value: string; // formato HH:MM
@@ -15,6 +17,7 @@ interface TimePickerProps {
 }
 
 export default function TimePicker({ value, onChange, disabled }: TimePickerProps) {
+  const theme = useColors();
   const [isOpen, setIsOpen] = useState(false);
 
   // Parse do horário atual
@@ -52,14 +55,14 @@ export default function TimePicker({ value, onChange, disabled }: TimePickerProp
     <View>
       {/* Campo de input */}
       <TouchableOpacity
-        style={[styles.input, disabled && styles.inputDisabled]}
+        style={[styles.input, { backgroundColor: theme.background.secondary }, disabled && styles.inputDisabled]}
         onPress={() => !disabled && handleOpen()}
         disabled={disabled}
       >
-        <Text style={styles.inputText}>
+        <Text style={[styles.inputText, { color: theme.text.primary }]}>
           {value || 'Selecionar hora'}
         </Text>
-        <Text style={styles.clockIcon}>🕐</Text>
+        <Feather name="clock" size={18} color={theme.text.tertiary} />
       </TouchableOpacity>
 
       {/* Modal do time picker */}
@@ -74,12 +77,12 @@ export default function TimePicker({ value, onChange, disabled }: TimePickerProp
           activeOpacity={1}
           onPress={() => setIsOpen(false)}
         >
-          <View style={styles.pickerContainer} onStartShouldSetResponder={() => true}>
-            <Text style={styles.title}>Selecionar Horário</Text>
+          <View style={[styles.pickerContainer, { backgroundColor: theme.background.secondary }]} onStartShouldSetResponder={() => true}>
+            <Text style={[styles.title, { color: theme.text.primary }]}>Selecionar Horário</Text>
 
             {/* Display do horário selecionado */}
-            <View style={styles.timeDisplay}>
-              <Text style={styles.timeDisplayText}>
+            <View style={[styles.timeDisplay, { backgroundColor: theme.background.tertiary }]}>
+              <Text style={[styles.timeDisplayText, { color: theme.accent.primary }]}>
                 {String(tempHour).padStart(2, '0')}:{String(tempMinute).padStart(2, '0')}
               </Text>
             </View>
@@ -88,20 +91,21 @@ export default function TimePicker({ value, onChange, disabled }: TimePickerProp
             <View style={styles.selectorsRow}>
               {/* Horas */}
               <View style={styles.selectorColumn}>
-                <Text style={styles.selectorLabel}>Hora</Text>
+                <Text style={[styles.selectorLabel, { color: theme.text.tertiary }]}>Hora</Text>
                 <ScrollView style={styles.scrollList} showsVerticalScrollIndicator={false}>
                   {hours.map((hour) => (
                     <TouchableOpacity
                       key={hour}
                       style={[
                         styles.listItem,
-                        tempHour === hour && styles.listItemSelected,
+                        tempHour === hour && [styles.listItemSelected, { backgroundColor: theme.accent.primary }],
                       ]}
                       onPress={() => setTempHour(hour)}
                     >
                       <Text
                         style={[
                           styles.listItemText,
+                          { color: theme.text.primary },
                           tempHour === hour && styles.listItemTextSelected,
                         ]}
                       >
@@ -113,24 +117,25 @@ export default function TimePicker({ value, onChange, disabled }: TimePickerProp
               </View>
 
               {/* Separador */}
-              <Text style={styles.separator}>:</Text>
+              <Text style={[styles.separator, { color: theme.text.tertiary }]}>:</Text>
 
               {/* Minutos */}
               <View style={styles.selectorColumn}>
-                <Text style={styles.selectorLabel}>Minuto</Text>
+                <Text style={[styles.selectorLabel, { color: theme.text.tertiary }]}>Minuto</Text>
                 <ScrollView style={styles.scrollList} showsVerticalScrollIndicator={false}>
                   {minutes.map((minute) => (
                     <TouchableOpacity
                       key={minute}
                       style={[
                         styles.listItem,
-                        tempMinute === minute && styles.listItemSelected,
+                        tempMinute === minute && [styles.listItemSelected, { backgroundColor: theme.accent.primary }],
                       ]}
                       onPress={() => setTempMinute(minute)}
                     >
                       <Text
                         style={[
                           styles.listItemText,
+                          { color: theme.text.primary },
                           tempMinute === minute && styles.listItemTextSelected,
                         ]}
                       >
@@ -145,54 +150,54 @@ export default function TimePicker({ value, onChange, disabled }: TimePickerProp
             {/* Atalhos rápidos */}
             <View style={styles.quickButtons}>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: theme.background.tertiary }]}
                 onPress={() => {
                   const now = new Date();
                   setTempHour(now.getHours());
                   setTempMinute(now.getMinutes());
                 }}
               >
-                <Text style={styles.quickButtonText}>Agora</Text>
+                <Text style={[styles.quickButtonText, { color: theme.accent.primary }]}>Agora</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: theme.background.tertiary }]}
                 onPress={() => {
                   setTempHour(6);
                   setTempMinute(0);
                 }}
               >
-                <Text style={styles.quickButtonText}>06:00</Text>
+                <Text style={[styles.quickButtonText, { color: theme.accent.primary }]}>06:00</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: theme.background.tertiary }]}
                 onPress={() => {
                   setTempHour(12);
                   setTempMinute(0);
                 }}
               >
-                <Text style={styles.quickButtonText}>12:00</Text>
+                <Text style={[styles.quickButtonText, { color: theme.accent.primary }]}>12:00</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.quickButton}
+                style={[styles.quickButton, { backgroundColor: theme.background.tertiary }]}
                 onPress={() => {
                   setTempHour(18);
                   setTempMinute(0);
                 }}
               >
-                <Text style={styles.quickButtonText}>18:00</Text>
+                <Text style={[styles.quickButtonText, { color: theme.accent.primary }]}>18:00</Text>
               </TouchableOpacity>
             </View>
 
             {/* Botões de ação */}
             <View style={styles.actionButtons}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, { backgroundColor: theme.background.tertiary }]}
                 onPress={() => setIsOpen(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <Text style={[styles.cancelButtonText, { color: theme.text.secondary }]}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.confirmButton}
+                style={[styles.confirmButton, { backgroundColor: theme.accent.primary }]}
                 onPress={handleConfirm}
               >
                 <Text style={styles.confirmButtonText}>Confirmar</Text>
@@ -207,7 +212,6 @@ export default function TimePicker({ value, onChange, disabled }: TimePickerProp
 
 const styles = StyleSheet.create({
   input: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -220,19 +224,14 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 16,
-    color: '#000000',
-  },
-  clockIcon: {
-    fontSize: 18,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   pickerContainer: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     width: 320,
@@ -241,12 +240,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 16,
   },
   timeDisplay: {
-    backgroundColor: '#F2F2F7',
     borderRadius: 12,
     paddingVertical: 16,
     marginBottom: 16,
@@ -254,7 +251,6 @@ const styles = StyleSheet.create({
   timeDisplayText: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#007AFF',
     textAlign: 'center',
   },
   selectorsRow: {
@@ -269,7 +265,6 @@ const styles = StyleSheet.create({
   },
   selectorLabel: {
     fontSize: 12,
-    color: '#8E8E93',
     marginBottom: 8,
     fontWeight: '600',
   },
@@ -284,22 +279,18 @@ const styles = StyleSheet.create({
     marginVertical: 2,
     marginHorizontal: 8,
   },
-  listItemSelected: {
-    backgroundColor: '#007AFF',
-  },
+  listItemSelected: {},
   listItemText: {
     fontSize: 18,
-    color: '#000000',
     textAlign: 'center',
   },
   listItemTextSelected: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontWeight: '600',
   },
   separator: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#8E8E93',
     marginHorizontal: 8,
   },
   quickButtons: {
@@ -310,14 +301,12 @@ const styles = StyleSheet.create({
   },
   quickButton: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
   },
   quickButtonText: {
     fontSize: 13,
-    color: '#007AFF',
     fontWeight: '500',
   },
   actionButtons: {
@@ -328,24 +317,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#F2F2F7',
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#8E8E93',
     fontWeight: '600',
   },
   confirmButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#007AFF',
     alignItems: 'center',
   },
   confirmButtonText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#000000',
     fontWeight: '600',
   },
 });

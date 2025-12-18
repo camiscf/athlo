@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { RunningActivity } from '../../types';
 
@@ -21,6 +23,7 @@ interface ActivityDetailScreenProps {
 }
 
 export default function ActivityDetailScreen({ route, navigation }: ActivityDetailScreenProps) {
+  const theme = useColors();
   const { activityId } = route.params;
   const [activity, setActivity] = useState<RunningActivity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,10 +74,9 @@ export default function ActivityDetailScreen({ route, navigation }: ActivityDeta
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString('pt-BR', {
-      weekday: 'long',
+      weekday: 'short',
       day: '2-digit',
-      month: 'long',
-      year: 'numeric',
+      month: 'short',
     });
   }
 
@@ -96,271 +98,429 @@ export default function ActivityDetailScreen({ route, navigation }: ActivityDeta
   }
 
   function getEffortColor(effort: number | null | undefined): string {
-    if (!effort) return '#8E8E93';
-    if (effort <= 2) return '#34C759';
-    if (effort <= 4) return '#30D158';
-    if (effort <= 6) return '#FF9500';
-    if (effort <= 8) return '#FF6B35';
-    return '#FF3B30';
+    if (!effort) return theme.text.secondary;
+    if (effort <= 4) return theme.semantic.success;
+    if (effort <= 6) return theme.semantic.warning;
+    if (effort <= 8) return '#F97316';
+    return theme.semantic.error;
   }
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   if (!activity) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Atividade não encontrada</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <Text style={{ color: theme.text.primary }}>Atividade não encontrada</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{activity.title || 'Corrida'}</Text>
-          <Text style={styles.date}>{formatDate(activity.start_time)}</Text>
-          <Text style={styles.time}>às {formatTime(activity.start_time)}</Text>
+          <View style={styles.headerTop}>
+            <Text style={[styles.dateTime, { color: theme.text.secondary }]}>
+              {formatDate(activity.start_time)} • {formatTime(activity.start_time)}
+            </Text>
+            <View style={[styles.typeBadge, { backgroundColor: theme.accent.primary }]}>
+              <Feather name="zap" size={12} color="#000000" />
+              <Text style={styles.typeBadgeText}>RUA</Text>
+            </View>
+          </View>
+          <Text style={[styles.title, { color: theme.text.primary }]}>
+            {activity.title || 'Corrida'}
+          </Text>
         </View>
 
-        {/* Stats principais */}
-        <View style={styles.mainStats}>
-          {activity.distance !== null && (
-            <View style={styles.mainStat}>
-              <Text style={styles.mainStatValue}>{activity.distance.toFixed(2)}</Text>
-              <Text style={styles.mainStatLabel}>km</Text>
+        {/* Main Stats Grid */}
+        <View style={[styles.statsCard, { backgroundColor: theme.background.secondary }]}>
+          <View style={styles.statsGrid}>
+            <View style={styles.statItem}>
+              <View style={styles.statHeader}>
+                <Text style={[styles.statLabel, { color: theme.text.secondary }]}>Distância</Text>
+                <Feather name="map-pin" size={14} color={theme.text.tertiary} />
+              </View>
+              <View style={styles.statValue}>
+                <Text style={[styles.statNumber, { color: theme.accent.primary }]}>
+                  {activity.distance?.toFixed(2) || '--'}
+                </Text>
+                <Text style={[styles.statUnit, { color: theme.text.secondary }]}>km</Text>
+              </View>
             </View>
-          )}
-          {activity.duration_formatted && (
-            <View style={styles.mainStat}>
-              <Text style={styles.mainStatValue}>{activity.duration_formatted}</Text>
-              <Text style={styles.mainStatLabel}>tempo</Text>
-            </View>
-          )}
-          {activity.pace_formatted && (
-            <View style={styles.mainStat}>
-              <Text style={styles.mainStatValue}>{activity.pace_formatted}</Text>
-              <Text style={styles.mainStatLabel}>pace/km</Text>
-            </View>
-          )}
-        </View>
 
-        {/* Detalhes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Detalhes</Text>
-          <View style={styles.detailsCard}>
-            {activity.speed_kmh !== null && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Velocidade média</Text>
-                <Text style={styles.detailValue}>{activity.speed_kmh.toFixed(1)} km/h</Text>
+            <View style={styles.statItem}>
+              <View style={styles.statHeader}>
+                <Text style={[styles.statLabel, { color: theme.text.secondary }]}>Duração</Text>
+                <Feather name="clock" size={14} color={theme.text.tertiary} />
               </View>
-            )}
-            {activity.effort && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Esforço</Text>
-                <View style={[styles.effortBadge, { backgroundColor: getEffortColor(activity.effort) }]}>
-                  <Text style={styles.effortText}>{getEffortLabel(activity.effort)}</Text>
-                </View>
+              <View style={styles.statValue}>
+                <Text style={[styles.statNumber, { color: theme.text.primary }]}>
+                  {activity.duration_formatted || '--'}
+                </Text>
+                <Text style={[styles.statUnit, { color: theme.text.secondary }]}>min</Text>
               </View>
-            )}
-            {activity.cadence && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Cadência</Text>
-                <Text style={styles.detailValue}>{activity.cadence} ppm</Text>
+            </View>
+
+            <View style={styles.statItem}>
+              <View style={styles.statHeader}>
+                <Text style={[styles.statLabel, { color: theme.text.secondary }]}>Ritmo Médio</Text>
+                <Feather name="trending-up" size={14} color={theme.text.tertiary} />
               </View>
-            )}
-            {activity.avg_heart_rate && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>FC média</Text>
-                <Text style={styles.detailValue}>{activity.avg_heart_rate} bpm</Text>
+              <View style={styles.statValue}>
+                <Text style={[styles.statNumber, { color: theme.text.primary }]}>
+                  {activity.pace_formatted || '--'}
+                </Text>
+                <Text style={[styles.statUnit, { color: theme.text.secondary }]}>/km</Text>
               </View>
-            )}
-            {activity.calories && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Calorias</Text>
-                <Text style={styles.detailValue}>{activity.calories} kcal</Text>
+            </View>
+
+            <View style={styles.statItem}>
+              <View style={styles.statHeader}>
+                <Text style={[styles.statLabel, { color: theme.text.secondary }]}>Calorias</Text>
+                <Feather name="zap" size={14} color={theme.text.tertiary} />
               </View>
-            )}
+              <View style={styles.statValue}>
+                <Text style={[styles.statNumber, { color: theme.text.primary }]}>
+                  {activity.calories || '--'}
+                </Text>
+                <Text style={[styles.statUnit, { color: theme.text.secondary }]}>kcal</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Notas */}
-        {activity.notes && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notas</Text>
-            <View style={styles.notesCard}>
-              <Text style={styles.notesText}>{activity.notes}</Text>
+        {/* Heart Rate */}
+        {activity.avg_heart_rate && (
+          <View style={[styles.hrCard, { backgroundColor: theme.background.secondary }]}>
+            <View style={styles.hrHeader}>
+              <Feather name="heart" size={16} color={theme.semantic.error} />
+              <Text style={[styles.hrLabel, { color: theme.text.secondary }]}>BATIMENTO CARDÍACO</Text>
+              <Text style={[styles.hrValue, { color: theme.text.primary }]}>
+                {activity.avg_heart_rate} BPM Médio
+              </Text>
+            </View>
+            <View style={styles.hrBarContainer}>
+              <View style={[styles.hrBar, { backgroundColor: theme.background.tertiary }]}>
+                <View
+                  style={[
+                    styles.hrBarFill,
+                    {
+                      backgroundColor: theme.accent.primary,
+                      width: `${Math.min((activity.avg_heart_rate / 200) * 100, 100)}%`
+                    }
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.hrIndicator,
+                    {
+                      backgroundColor: theme.accent.primary,
+                      left: `${Math.min((activity.avg_heart_rate / 200) * 100, 100)}%`
+                    }
+                  ]}
+                >
+                  <Text style={styles.hrIndicatorText}>{activity.avg_heart_rate}</Text>
+                </View>
+              </View>
+              <View style={styles.hrLabels}>
+                <Text style={[styles.hrLabelText, { color: theme.text.tertiary }]}>LEVE</Text>
+                <Text style={[styles.hrLabelText, { color: theme.text.tertiary }]}>INTENSO</Text>
+              </View>
             </View>
           </View>
         )}
 
-        {/* Botões de ação */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => navigation.navigate('EditActivity', { activityId })}
-            disabled={isDeleting}
-          >
-            <Text style={styles.editButtonText}>Editar Atividade</Text>
-          </TouchableOpacity>
+        {/* Additional Details */}
+        <View style={[styles.detailsCard, { backgroundColor: theme.background.secondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Detalhes</Text>
 
-          <TouchableOpacity
-            style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
-            onPress={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.deleteButtonText}>Excluir Atividade</Text>
-            )}
-          </TouchableOpacity>
+          {activity.speed_kmh !== null && (
+            <View style={[styles.detailRow, { borderBottomColor: theme.border.primary }]}>
+              <Text style={[styles.detailLabel, { color: theme.text.secondary }]}>Velocidade média</Text>
+              <Text style={[styles.detailValue, { color: theme.text.primary }]}>
+                {activity.speed_kmh.toFixed(1)} km/h
+              </Text>
+            </View>
+          )}
+
+          {activity.cadence && (
+            <View style={[styles.detailRow, { borderBottomColor: theme.border.primary }]}>
+              <Text style={[styles.detailLabel, { color: theme.text.secondary }]}>Cadência</Text>
+              <Text style={[styles.detailValue, { color: theme.text.primary }]}>
+                {activity.cadence} ppm
+              </Text>
+            </View>
+          )}
+
+          {activity.effort && (
+            <View style={[styles.detailRow, { borderBottomColor: theme.border.primary }]}>
+              <Text style={[styles.detailLabel, { color: theme.text.secondary }]}>Esforço Percebido</Text>
+              <View style={styles.effortContainer}>
+                <Text style={[styles.effortValue, { color: getEffortColor(activity.effort) }]}>
+                  {activity.effort}/10
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
+
+        {/* Notes */}
+        {activity.notes && (
+          <View style={[styles.notesCard, { backgroundColor: theme.background.secondary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Notas</Text>
+            <Text style={[styles.notesText, { color: theme.text.secondary }]}>
+              {activity.notes}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Bottom Action */}
+      <View style={[styles.bottomAction, { backgroundColor: theme.background.primary, borderTopColor: theme.border.primary }]}>
+        <TouchableOpacity
+          style={[styles.editButton, { backgroundColor: theme.accent.primary }]}
+          onPress={() => navigation.navigate('EditActivity', { activityId })}
+          disabled={isDeleting}
+        >
+          <Feather name="edit-2" size={18} color="#000000" />
+          <Text style={styles.editButtonText}>Editar Treino</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.deleteButton, { backgroundColor: theme.background.tertiary }]}
+          onPress={handleDelete}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator color={theme.semantic.error} size="small" />
+          ) : (
+            <Feather name="trash-2" size={20} color={theme.semantic.error} />
+          )}
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
-  content: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 100,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dateTime: {
+    fontSize: 14,
+  },
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#000000',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
-    marginBottom: 8,
   },
-  date: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textTransform: 'capitalize',
-  },
-  time: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  mainStats: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    gap: 16,
-  },
-  mainStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  mainStatValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  mainStatLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 12,
-  },
-  detailsCard: {
-    backgroundColor: '#FFFFFF',
+  statsCard: {
     borderRadius: 16,
     padding: 16,
+    marginBottom: 12,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  statItem: {
+    width: '50%',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  statHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+  },
+  statValue: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  statUnit: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  hrCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  hrHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  hrLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    flex: 1,
+  },
+  hrValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  hrBarContainer: {
+    marginTop: 8,
+  },
+  hrBar: {
+    height: 8,
+    borderRadius: 4,
+    position: 'relative',
+  },
+  hrBarFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 4,
+  },
+  hrIndicator: {
+    position: 'absolute',
+    top: -8,
+    width: 28,
+    height: 24,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: -14,
+  },
+  hrIndicatorText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  hrLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  hrLabelText: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  detailsCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
   },
   detailLabel: {
     fontSize: 15,
-    color: '#000000',
   },
   detailValue: {
     fontSize: 15,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
-  effortBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  effortText: {
-    fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+  },
+  effortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  effortValue: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   notesCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
+    marginBottom: 12,
   },
   notesText: {
     fontSize: 15,
-    color: '#000000',
     lineHeight: 22,
   },
-  actionButtons: {
+  bottomAction: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    padding: 16,
     gap: 12,
-    marginTop: 8,
-    marginBottom: 32,
+    borderTopWidth: 1,
   },
   editButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
   },
   editButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#000000',
   },
   deleteButton: {
-    backgroundColor: '#FF3B30',
+    width: 56,
+    height: 56,
     borderRadius: 12,
-    paddingVertical: 16,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  deleteButtonDisabled: {
-    backgroundColor: '#FF8A80',
-  },
-  deleteButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
   },
 });

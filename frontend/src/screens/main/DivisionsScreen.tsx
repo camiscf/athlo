@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Platform,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { WorkoutDivision } from '../../types';
 
@@ -18,6 +19,7 @@ interface DivisionsScreenProps {
 }
 
 export default function DivisionsScreen({ navigation }: DivisionsScreenProps) {
+  const theme = useColors();
   const [divisions, setDivisions] = useState<WorkoutDivision[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -62,39 +64,39 @@ export default function DivisionsScreen({ navigation }: DivisionsScreenProps) {
 
     return (
       <TouchableOpacity
-        style={styles.divisionCard}
+        style={[styles.divisionCard, { backgroundColor: theme.background.secondary }]}
         onPress={() => handleEditDivision(item)}
       >
         <View style={styles.divisionHeader}>
-          <Text style={styles.divisionName}>{item.name}</Text>
+          <Text style={[styles.divisionName, { color: theme.text.primary }]}>{item.name}</Text>
           <TouchableOpacity
-            style={styles.startButton}
+            style={[styles.startButton, { backgroundColor: theme.semantic.success }]}
             onPress={() => handleStartWorkout(item)}
           >
-            <Text style={styles.startButtonText}>Iniciar</Text>
+            <Text style={[styles.startButtonText, { color: theme.text.primary }]}>Iniciar</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.divisionInfo}>
-          <Text style={styles.exerciseCount}>
+          <Text style={[styles.exerciseCount, { color: theme.text.secondary }]}>
             {item.exercises.length} exercício{item.exercises.length !== 1 ? 's' : ''}
           </Text>
           {muscleGroups.length > 0 && (
-            <Text style={styles.muscleGroups}>
+            <Text style={[styles.muscleGroups, { color: theme.accent.primary }]}>
               {muscleGroups.join(' • ')}
             </Text>
           )}
         </View>
 
         {item.exercises.length > 0 && (
-          <View style={styles.exercisePreview}>
+          <View style={[styles.exercisePreview, { backgroundColor: theme.background.tertiary }]}>
             {item.exercises.slice(0, 3).map((ex, index) => (
-              <Text key={index} style={styles.exercisePreviewText}>
+              <Text key={index} style={[styles.exercisePreviewText, { color: theme.text.primary }]}>
                 • {ex.exercise_name} - {ex.sets}x{ex.reps}
               </Text>
             ))}
             {item.exercises.length > 3 && (
-              <Text style={styles.moreText}>
+              <Text style={[styles.moreText, { color: theme.text.secondary }]}>
                 +{item.exercises.length - 3} mais...
               </Text>
             )}
@@ -106,34 +108,41 @@ export default function DivisionsScreen({ navigation }: DivisionsScreenProps) {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <FlatList
         data={divisions}
         renderItem={renderDivision}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.accent.primary]}
+            tintColor={theme.accent.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={styles.emptyTitle}>Nenhuma divisão criada</Text>
-            <Text style={styles.emptyText}>
+            <Feather name="layers" size={48} color={theme.text.tertiary} style={styles.emptyIcon} />
+            <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>
+              Nenhuma divisão criada
+            </Text>
+            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
               Crie divisões de treino para organizar seus exercícios
             </Text>
           </View>
         }
         ListHeaderComponent={
           divisions.length > 0 ? (
-            <Text style={styles.headerText}>
+            <Text style={[styles.headerText, { color: theme.text.secondary }]}>
               {divisions.length}/5 divisões
             </Text>
           ) : null
@@ -142,10 +151,10 @@ export default function DivisionsScreen({ navigation }: DivisionsScreenProps) {
 
       {divisions.length < 5 && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: theme.accent.primary }]}
           onPress={handleCreateDivision}
         >
-          <Text style={styles.fabText}>+</Text>
+          <Feather name="plus" size={24} color="#000000" />
         </TouchableOpacity>
       )}
     </View>
@@ -155,13 +164,11 @@ export default function DivisionsScreen({ navigation }: DivisionsScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   listContent: {
     padding: 16,
@@ -169,11 +176,9 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 14,
-    color: '#8E8E93',
     marginBottom: 12,
   },
   divisionCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -187,17 +192,14 @@ const styles = StyleSheet.create({
   divisionName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
     flex: 1,
   },
   startButton: {
-    backgroundColor: '#34C759',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   startButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -208,26 +210,21 @@ const styles = StyleSheet.create({
   },
   exerciseCount: {
     fontSize: 14,
-    color: '#8E8E93',
     marginRight: 12,
   },
   muscleGroups: {
     fontSize: 12,
-    color: '#007AFF',
   },
   exercisePreview: {
-    backgroundColor: '#F2F2F7',
     borderRadius: 8,
     padding: 12,
   },
   exercisePreviewText: {
     fontSize: 14,
-    color: '#000000',
     marginBottom: 4,
   },
   moreText: {
     fontSize: 12,
-    color: '#8E8E93',
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -236,18 +233,15 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -258,7 +252,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
@@ -266,13 +259,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-  },
-  fabText: {
-    fontSize: 32,
-    color: '#FFFFFF',
-    fontWeight: '300',
-    textAlign: 'center',
-    lineHeight: 32,
-    marginTop: -2,
   },
 });

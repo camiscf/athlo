@@ -4,6 +4,7 @@ import { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/n
 
 // Auth Stack
 export type AuthStackParamList = {
+  Onboarding: undefined;
   Login: undefined;
   Register: undefined;
 };

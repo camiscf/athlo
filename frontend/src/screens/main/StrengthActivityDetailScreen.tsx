@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { StrengthActivity } from '../../types';
 
@@ -21,6 +23,7 @@ interface StrengthActivityDetailScreenProps {
 }
 
 export default function StrengthActivityDetailScreen({ route, navigation }: StrengthActivityDetailScreenProps) {
+  const theme = useColors();
   const { activityId } = route.params;
   const [activity, setActivity] = useState<StrengthActivity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,26 +108,25 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
   }
 
   function getEffortColor(effort: number | null | undefined): string {
-    if (!effort) return '#8E8E93';
-    if (effort <= 2) return '#34C759';
-    if (effort <= 4) return '#30D158';
-    if (effort <= 6) return '#FF9500';
-    if (effort <= 8) return '#FF6B35';
-    return '#FF3B30';
+    if (!effort) return theme.text.secondary;
+    if (effort <= 4) return theme.semantic.success;
+    if (effort <= 6) return theme.semantic.warning;
+    if (effort <= 8) return '#F97316';
+    return theme.semantic.error;
   }
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#34C759" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   if (!activity) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Treino não encontrado</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <Text style={{ color: theme.text.primary }}>Treino não encontrado</Text>
       </View>
     );
   }
@@ -133,25 +135,25 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
   const muscleGroups = [...new Set(activity.exercises.map(e => e.muscle_group))];
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{activity.title || activity.division_name || 'Treino de Força'}</Text>
-          <Text style={styles.date}>{formatDate(activity.start_time)}</Text>
-          <Text style={styles.time}>às {formatTime(activity.start_time)}</Text>
+          <Text style={[styles.title, { color: theme.text.primary }]}>{activity.title || activity.division_name || 'Treino de Força'}</Text>
+          <Text style={[styles.date, { color: theme.text.secondary }]}>{formatDate(activity.start_time)}</Text>
+          <Text style={[styles.time, { color: theme.text.secondary }]}>às {formatTime(activity.start_time)}</Text>
         </View>
 
         {/* Stats principais */}
-        <View style={styles.mainStats}>
+        <View style={[styles.mainStats, { backgroundColor: theme.background.secondary }]}>
           <View style={styles.mainStat}>
-            <Text style={styles.mainStatValue}>{activity.exercises.length}</Text>
-            <Text style={styles.mainStatLabel}>exercícios</Text>
+            <Text style={[styles.mainStatValue, { color: theme.accent.primary }]}>{activity.exercises.length}</Text>
+            <Text style={[styles.mainStatLabel, { color: theme.text.secondary }]}>exercícios</Text>
           </View>
           {activity.duration && (
             <View style={styles.mainStat}>
-              <Text style={styles.mainStatValue}>{formatDuration(activity.duration)}</Text>
-              <Text style={styles.mainStatLabel}>duração</Text>
+              <Text style={[styles.mainStatValue, { color: theme.accent.primary }]}>{formatDuration(activity.duration)}</Text>
+              <Text style={[styles.mainStatLabel, { color: theme.text.secondary }]}>duração</Text>
             </View>
           )}
           {activity.effort && (
@@ -159,7 +161,7 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
               <View style={[styles.effortBadgeLarge, { backgroundColor: getEffortColor(activity.effort) }]}>
                 <Text style={styles.effortTextLarge}>{activity.effort}</Text>
               </View>
-              <Text style={styles.mainStatLabel}>esforço</Text>
+              <Text style={[styles.mainStatLabel, { color: theme.text.secondary }]}>esforço</Text>
             </View>
           )}
         </View>
@@ -168,7 +170,7 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
         {muscleGroups.length > 0 && (
           <View style={styles.muscleGroupsContainer}>
             {muscleGroups.map((group) => (
-              <View key={group} style={styles.muscleGroupBadge}>
+              <View key={group} style={[styles.muscleGroupBadge, { backgroundColor: theme.accent.primary }]}>
                 <Text style={styles.muscleGroupText}>{group}</Text>
               </View>
             ))}
@@ -177,39 +179,39 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
 
         {/* Exercícios */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Exercícios</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Exercícios</Text>
           {activity.exercises.map((exercise, index) => (
-            <View key={index} style={styles.exerciseCard}>
+            <View key={index} style={[styles.exerciseCard, { backgroundColor: theme.background.secondary }]}>
               <View style={styles.exerciseHeader}>
                 <View style={styles.exerciseTitleRow}>
-                  <Text style={styles.exerciseName}>{exercise.exercise_name}</Text>
-                  <View style={styles.muscleBadge}>
-                    <Text style={styles.muscleBadgeText}>{exercise.muscle_group}</Text>
+                  <Text style={[styles.exerciseName, { color: theme.text.primary }]}>{exercise.exercise_name}</Text>
+                  <View style={[styles.muscleBadge, { backgroundColor: theme.accent.muted }]}>
+                    <Text style={[styles.muscleBadgeText, { color: theme.accent.primary }]}>{exercise.muscle_group}</Text>
                   </View>
                 </View>
               </View>
 
-              <View style={styles.exerciseStats}>
+              <View style={[styles.exerciseStats, { backgroundColor: theme.background.tertiary }]}>
                 <View style={styles.exerciseStat}>
-                  <Text style={styles.exerciseStatValue}>{exercise.sets_completed}</Text>
-                  <Text style={styles.exerciseStatLabel}>séries</Text>
+                  <Text style={[styles.exerciseStatValue, { color: theme.text.primary }]}>{exercise.sets_completed}</Text>
+                  <Text style={[styles.exerciseStatLabel, { color: theme.text.secondary }]}>séries</Text>
                 </View>
                 <View style={styles.exerciseStat}>
-                  <Text style={styles.exerciseStatValue}>{exercise.reps_completed}</Text>
-                  <Text style={styles.exerciseStatLabel}>reps</Text>
+                  <Text style={[styles.exerciseStatValue, { color: theme.text.primary }]}>{exercise.reps_completed}</Text>
+                  <Text style={[styles.exerciseStatLabel, { color: theme.text.secondary }]}>reps</Text>
                 </View>
                 <View style={styles.exerciseStat}>
-                  <Text style={styles.exerciseStatValue}>{exercise.weight || '-'}</Text>
-                  <Text style={styles.exerciseStatLabel}>kg</Text>
+                  <Text style={[styles.exerciseStatValue, { color: theme.text.primary }]}>{exercise.weight || '-'}</Text>
+                  <Text style={[styles.exerciseStatLabel, { color: theme.text.secondary }]}>kg</Text>
                 </View>
                 <View style={styles.exerciseStat}>
-                  <Text style={styles.exerciseStatValue}>{exercise.rpe || '-'}</Text>
-                  <Text style={styles.exerciseStatLabel}>RPE</Text>
+                  <Text style={[styles.exerciseStatValue, { color: theme.text.primary }]}>{exercise.rpe || '-'}</Text>
+                  <Text style={[styles.exerciseStatLabel, { color: theme.text.secondary }]}>RPE</Text>
                 </View>
               </View>
 
               {exercise.notes && (
-                <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
+                <Text style={[styles.exerciseNotes, { color: theme.text.secondary }]}>{exercise.notes}</Text>
               )}
             </View>
           ))}
@@ -218,9 +220,9 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
         {/* Notas */}
         {activity.notes && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notas do Treino</Text>
-            <View style={styles.notesCard}>
-              <Text style={styles.notesText}>{activity.notes}</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Notas do Treino</Text>
+            <View style={[styles.notesCard, { backgroundColor: theme.background.secondary }]}>
+              <Text style={[styles.notesText, { color: theme.text.primary }]}>{activity.notes}</Text>
             </View>
           </View>
         )}
@@ -228,22 +230,26 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
         {/* Botões de ação */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={styles.editButton}
+            style={[styles.editButton, { backgroundColor: theme.accent.primary }]}
             onPress={() => navigation.navigate('EditStrengthWorkout', { activityId })}
             disabled={isDeleting}
           >
+            <Feather name="edit-2" size={18} color="#000000" style={styles.buttonIcon} />
             <Text style={styles.editButtonText}>Editar Treino</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
+            style={[styles.deleteButton, { backgroundColor: theme.semantic.error }, isDeleting && styles.deleteButtonDisabled]}
             onPress={handleDelete}
             disabled={isDeleting}
           >
             {isDeleting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.deleteButtonText}>Excluir Treino</Text>
+              <>
+                <Feather name="trash-2" size={18} color="#FFFFFF" style={styles.buttonIcon} />
+                <Text style={styles.deleteButtonText}>Excluir Treino</Text>
+              </>
             )}
           </TouchableOpacity>
         </View>
@@ -255,13 +261,11 @@ export default function StrengthActivityDetailScreen({ route, navigation }: Stre
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   content: {
     padding: 16,
@@ -272,21 +276,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 8,
   },
   date: {
     fontSize: 16,
-    color: '#8E8E93',
     textTransform: 'capitalize',
   },
   time: {
     fontSize: 14,
-    color: '#8E8E93',
   },
   mainStats: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -301,12 +301,10 @@ const styles = StyleSheet.create({
   mainStatValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#34C759',
     textAlign: 'center',
   },
   mainStatLabel: {
     fontSize: 12,
-    color: '#8E8E93',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -329,7 +327,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   muscleGroupBadge: {
-    backgroundColor: '#34C759',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -337,7 +334,7 @@ const styles = StyleSheet.create({
   muscleGroupText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000000',
   },
   section: {
     marginBottom: 24,
@@ -345,11 +342,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 12,
   },
   exerciseCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
@@ -365,12 +360,10 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
     flex: 1,
     marginRight: 8,
   },
   muscleBadge: {
-    backgroundColor: '#34C75920',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -378,12 +371,10 @@ const styles = StyleSheet.create({
   muscleBadgeText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#34C759',
   },
   exerciseStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F8F8F8',
     borderRadius: 10,
     padding: 12,
   },
@@ -394,29 +385,24 @@ const styles = StyleSheet.create({
   exerciseStatValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000000',
     textAlign: 'center',
   },
   exerciseStatLabel: {
     fontSize: 11,
-    color: '#8E8E93',
     marginTop: 3,
     textAlign: 'center',
   },
   exerciseNotes: {
     marginTop: 12,
     fontSize: 14,
-    color: '#8E8E93',
     fontStyle: 'italic',
   },
   notesCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
   },
   notesText: {
     fontSize: 15,
-    color: '#000000',
     lineHeight: 22,
   },
   actionButtons: {
@@ -425,24 +411,29 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   editButton: {
-    backgroundColor: '#34C759',
+    flexDirection: 'row',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   editButtonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 17,
     fontWeight: '600',
   },
+  buttonIcon: {
+    marginRight: 8,
+  },
   deleteButton: {
-    backgroundColor: '#FF3B30',
+    flexDirection: 'row',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteButtonDisabled: {
-    backgroundColor: '#FF8A80',
+    opacity: 0.6,
   },
   deleteButtonText: {
     color: '#FFFFFF',

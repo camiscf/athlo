@@ -11,11 +11,40 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { BodyMeasurement, BodyMeasurementCreate, WeightRecord } from '../../types';
 
+type PeriodType = '30D' | '3M' | '1A';
+
+interface MeasurementCardProps {
+  icon: string;
+  label: string;
+  value: string | number;
+  unit: string;
+  theme: any;
+}
+
+function MeasurementCard({ icon, label, value, unit, theme }: MeasurementCardProps) {
+  return (
+    <View style={[styles.measurementCard, { backgroundColor: theme.background.secondary }]}>
+      <View style={[styles.measurementIcon, { backgroundColor: theme.accent.muted }]}>
+        <Feather name={icon as any} size={18} color={theme.accent.primary} />
+      </View>
+      <Text style={[styles.measurementLabel, { color: theme.text.secondary }]}>{label}</Text>
+      <View style={styles.measurementValueRow}>
+        <Text style={[styles.measurementValue, { color: theme.text.primary }]}>{value}</Text>
+        <Text style={[styles.measurementUnit, { color: theme.text.tertiary }]}>{unit}</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function BodyScreen() {
+  const theme = useColors();
+  const navigation = useNavigation();
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [weightHistory, setWeightHistory] = useState<WeightRecord[]>([]);
   const [latestMeasurement, setLatestMeasurement] = useState<BodyMeasurement | null>(null);
@@ -23,6 +52,7 @@ export default function BodyScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('30D');
 
   // Form state
   const [formData, setFormData] = useState<BodyMeasurementCreate>({});
@@ -31,7 +61,7 @@ export default function BodyScreen() {
     try {
       const [measurementsData, weightData, latest] = await Promise.all([
         api.getBodyMeasurements(10),
-        api.getWeightHistory(30),
+        api.getWeightHistory(90),
         api.getLatestBodyMeasurement(),
       ]);
       setMeasurements(measurementsData);
@@ -61,7 +91,6 @@ export default function BodyScreen() {
   };
 
   const handleSave = async () => {
-    // Check if at least one field is filled
     const hasValue = Object.values(formData).some(v => v !== undefined && v !== null && v !== '');
     if (!hasValue) {
       if (Platform.OS === 'web') {
@@ -86,186 +115,248 @@ export default function BodyScreen() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmDelete = Platform.OS === 'web'
-      ? window.confirm('Tem certeza que deseja excluir esta medida?')
-      : true;
-
-    if (!confirmDelete) return;
-
-    try {
-      await api.deleteBodyMeasurement(id);
-      loadData();
-    } catch (error) {
-      console.error('Error deleting measurement:', error);
-    }
-  };
-
   const updateFormField = (field: keyof BodyMeasurementCreate, value: string) => {
     const numValue = value === '' ? undefined : parseFloat(value);
     setFormData(prev => ({ ...prev, [field]: numValue }));
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('pt-BR');
-  };
-
-  // Calculate weight change
+  // Calculate statistics
   const getWeightChange = () => {
-    if (weightHistory.length < 2) return null;
+    if (weightHistory.length < 2) return { change: 0, percent: 0 };
     const latest = weightHistory[weightHistory.length - 1];
-    const previous = weightHistory[weightHistory.length - 2];
-    return latest.weight - previous.weight;
+    const first = weightHistory[0];
+    const change = latest.weight - first.weight;
+    const percent = ((latest.weight - first.weight) / first.weight) * 100;
+    return { change, percent };
   };
 
-  const weightChange = getWeightChange();
+  const calculateIMC = () => {
+    if (!latestMeasurement?.weight) return null;
+    const height = 1.75; // Default height since we don't track it
+    return latestMeasurement.weight / (height * height);
+  };
+
+  const { change: weightChange, percent: weightPercent } = getWeightChange();
+  const imc = calculateIMC();
+
+  // Filter weight history by period
+  const getFilteredHistory = () => {
+    const now = new Date();
+    const days = selectedPeriod === '30D' ? 30 : selectedPeriod === '3M' ? 90 : 365;
+    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return weightHistory.filter(r => new Date(r.date) >= cutoff);
+  };
+
+  const filteredHistory = getFilteredHistory();
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.accent.primary]}
+            tintColor={theme.accent.primary}
+          />
         }
       >
-        {/* Current Stats Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Medidas Atuais</Text>
-          {latestMeasurement ? (
-            <View style={styles.statsGrid}>
-              {latestMeasurement.weight && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{latestMeasurement.weight.toFixed(1)}</Text>
-                  <Text style={styles.statLabel}>Peso (kg)</Text>
-                  {weightChange !== null && (
-                    <Text style={[
-                      styles.statChange,
-                      weightChange > 0 ? styles.statChangeUp : styles.statChangeDown
-                    ]}>
-                      {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
-                    </Text>
-                  )}
-                </View>
-              )}
-              {latestMeasurement.body_fat_percentage && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{latestMeasurement.body_fat_percentage.toFixed(1)}</Text>
-                  <Text style={styles.statLabel}>BF%</Text>
-                </View>
-              )}
-              {latestMeasurement.chest && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{latestMeasurement.chest.toFixed(1)}</Text>
-                  <Text style={styles.statLabel}>Peito (cm)</Text>
-                </View>
-              )}
-              {latestMeasurement.waist && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{latestMeasurement.waist.toFixed(1)}</Text>
-                  <Text style={styles.statLabel}>Cintura (cm)</Text>
-                </View>
-              )}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>Nenhuma medida registrada</Text>
-          )}
-          {latestMeasurement && (
-            <Text style={styles.lastUpdate}>
-              Atualizado em {formatDate(latestMeasurement.date)}
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Medicoes Corporais</Text>
+          <TouchableOpacity>
+            <Text style={[styles.historyLink, { color: theme.accent.primary }]}>Historico</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Main Stats Cards */}
+        <View style={styles.mainStatsRow}>
+          <View style={[styles.mainStatCard, { backgroundColor: theme.background.secondary }]}>
+            <Text style={[styles.mainStatLabel, { color: theme.text.secondary }]}>Peso Atual</Text>
+            <Text style={[styles.mainStatValue, { color: theme.text.primary }]}>
+              {latestMeasurement?.weight?.toFixed(1) || '--'}
             </Text>
+            <Text style={[styles.mainStatUnit, { color: theme.text.tertiary }]}>kg</Text>
+          </View>
+          <View style={[styles.mainStatCard, { backgroundColor: theme.background.secondary }]}>
+            <Text style={[styles.mainStatLabel, { color: theme.text.secondary }]}>Gordura</Text>
+            <Text style={[styles.mainStatValue, { color: theme.text.primary }]}>
+              {latestMeasurement?.body_fat_percentage?.toFixed(1) || '--'}
+            </Text>
+            <Text style={[styles.mainStatUnit, { color: theme.text.tertiary }]}>%</Text>
+          </View>
+          <View style={[styles.mainStatCard, { backgroundColor: theme.background.secondary }]}>
+            <Text style={[styles.mainStatLabel, { color: theme.text.secondary }]}>IMC</Text>
+            <Text style={[styles.mainStatValue, { color: theme.text.primary }]}>
+              {imc?.toFixed(1) || '--'}
+            </Text>
+            <Text style={[styles.mainStatUnit, { color: theme.text.tertiary }]}></Text>
+          </View>
+        </View>
+
+        {/* Progress Card */}
+        <View style={[styles.progressCard, { backgroundColor: theme.background.secondary }]}>
+          {/* Period Selector */}
+          <View style={[styles.periodSelector, { backgroundColor: theme.background.tertiary }]}>
+            {(['30D', '3M', '1A'] as PeriodType[]).map((period) => (
+              <TouchableOpacity
+                key={period}
+                style={[
+                  styles.periodButton,
+                  selectedPeriod === period && { backgroundColor: theme.accent.primary },
+                ]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text
+                  style={[
+                    styles.periodButtonText,
+                    { color: theme.text.secondary },
+                    selectedPeriod === period && { color: '#000000', fontWeight: '600' },
+                  ]}
+                >
+                  {period}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Change Stats */}
+          <View style={styles.changeStats}>
+            <View style={styles.changeStat}>
+              <Feather
+                name={weightChange <= 0 ? 'trending-down' : 'trending-up'}
+                size={20}
+                color={weightChange <= 0 ? theme.semantic.success : theme.semantic.warning}
+              />
+              <Text
+                style={[
+                  styles.changeValue,
+                  { color: weightChange <= 0 ? theme.semantic.success : theme.semantic.warning },
+                ]}
+              >
+                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+              </Text>
+            </View>
+            <View style={styles.changeStat}>
+              <Text
+                style={[
+                  styles.changePercent,
+                  { color: weightPercent <= 0 ? theme.semantic.success : theme.semantic.warning },
+                ]}
+              >
+                {weightPercent > 0 ? '+' : ''}{weightPercent.toFixed(1)}%
+              </Text>
+            </View>
+          </View>
+
+          {/* Simple Chart */}
+          {filteredHistory.length > 0 && (
+            <View style={styles.chartContainer}>
+              <View style={styles.chartArea}>
+                {filteredHistory.slice(-7).map((record, index, arr) => {
+                  const maxWeight = Math.max(...arr.map(r => r.weight));
+                  const minWeight = Math.min(...arr.map(r => r.weight));
+                  const range = maxWeight - minWeight || 1;
+                  const height = ((record.weight - minWeight) / range) * 60 + 20;
+
+                  return (
+                    <View key={index} style={styles.chartBarWrapper}>
+                      <View
+                        style={[
+                          styles.chartBar,
+                          { height, backgroundColor: theme.accent.primary },
+                        ]}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={[styles.chartLine, { backgroundColor: theme.accent.primary + '40' }]} />
+            </View>
           )}
         </View>
 
-        {/* Weight History */}
-        {weightHistory.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Histórico de Peso</Text>
-            <View style={styles.weightChart}>
-              {weightHistory.slice(-7).map((record, index) => {
-                const maxWeight = Math.max(...weightHistory.map(r => r.weight));
-                const minWeight = Math.min(...weightHistory.map(r => r.weight));
-                const range = maxWeight - minWeight || 1;
-                const height = ((record.weight - minWeight) / range) * 80 + 20;
-
-                return (
-                  <View key={index} style={styles.chartBar}>
-                    <Text style={styles.chartValue}>{record.weight.toFixed(0)}</Text>
-                    <View style={[styles.bar, { height }]} />
-                    <Text style={styles.chartDate}>
-                      {new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+        {/* Measurements Section */}
+        <View style={styles.measurementsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Medidas (cm)</Text>
+            <TouchableOpacity>
+              <Text style={[styles.editLink, { color: theme.accent.primary }]}>Editar lista</Text>
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Measurements History */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Histórico de Medidas</Text>
-          {measurements.length > 0 ? (
-            measurements.map((measurement) => (
-              <TouchableOpacity
-                key={measurement.id}
-                style={styles.measurementItem}
-                onLongPress={() => handleDelete(measurement.id)}
-              >
-                <View style={styles.measurementHeader}>
-                  <Text style={styles.measurementDate}>{formatDate(measurement.date)}</Text>
-                  {measurement.weight && (
-                    <Text style={styles.measurementWeight}>{measurement.weight.toFixed(1)} kg</Text>
-                  )}
-                </View>
-                <View style={styles.measurementDetails}>
-                  {measurement.body_fat_percentage && (
-                    <Text style={styles.measurementDetail}>BF: {measurement.body_fat_percentage}%</Text>
-                  )}
-                  {measurement.chest && (
-                    <Text style={styles.measurementDetail}>Peito: {measurement.chest}cm</Text>
-                  )}
-                  {measurement.waist && (
-                    <Text style={styles.measurementDetail}>Cintura: {measurement.waist}cm</Text>
-                  )}
-                  {measurement.hips && (
-                    <Text style={styles.measurementDetail}>Quadril: {measurement.hips}cm</Text>
-                  )}
-                  {(measurement.left_arm || measurement.right_arm) && (
-                    <Text style={styles.measurementDetail}>
-                      Braços: {measurement.left_arm || '-'}/{measurement.right_arm || '-'}cm
-                    </Text>
-                  )}
-                </View>
-                {measurement.notes && (
-                  <Text style={styles.measurementNotes}>{measurement.notes}</Text>
-                )}
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>Nenhuma medida registrada ainda</Text>
+          <View style={styles.measurementsGrid}>
+            <MeasurementCard
+              icon="maximize-2"
+              label="Peitoral"
+              value={latestMeasurement?.chest?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="minus"
+              label="Cintura"
+              value={latestMeasurement?.waist?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="circle"
+              label="Biceps Dir."
+              value={latestMeasurement?.right_arm?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="move"
+              label="Coxa Dir."
+              value={latestMeasurement?.right_thigh?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="circle"
+              label="Biceps Esq."
+              value={latestMeasurement?.left_arm?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="move"
+              label="Coxa Esq."
+              value={latestMeasurement?.left_thigh?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+          </View>
+
+          {latestMeasurement && (
+            <Text style={[styles.lastUpdateText, { color: theme.text.tertiary }]}>
+              Atualizado em {new Date(latestMeasurement.date).toLocaleDateString('pt-BR')}
+            </Text>
           )}
         </View>
       </ScrollView>
 
       {/* FAB */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.accent.primary }]}
         onPress={() => {
           resetForm();
           setShowAddModal(true);
         }}
       >
-        <Text style={styles.fabText}>+</Text>
+        <Feather name="plus" size={26} color="#000000" />
       </TouchableOpacity>
 
       {/* Add Modal */}
@@ -276,39 +367,53 @@ export default function BodyScreen() {
         onRequestClose={() => setShowAddModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Text style={styles.modalCancel}>Cancelar</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.background.primary }]}>
+            {/* Modal Header */}
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border.primary }]}>
+              <TouchableOpacity
+                style={[styles.modalHeaderButton, { backgroundColor: theme.background.secondary }]}
+                onPress={() => setShowAddModal(false)}
+              >
+                <Feather name="x" size={20} color={theme.text.primary} />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Nova Medida</Text>
-              <TouchableOpacity onPress={handleSave} disabled={isSaving}>
-                <Text style={[styles.modalSave, isSaving && styles.modalSaveDisabled]}>
-                  {isSaving ? 'Salvando...' : 'Salvar'}
-                </Text>
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>Nova Medida</Text>
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: theme.accent.primary }]}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#000000" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                )}
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalForm}>
+            <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
               {/* Weight & BF */}
-              <Text style={styles.sectionTitle}>Peso e Composição</Text>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Peso (kg)</Text>
+              <Text style={[styles.formSectionTitle, { color: theme.text.secondary }]}>
+                PESO E COMPOSICAO
+              </Text>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Peso (kg)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.weight?.toString() || ''}
                     onChangeText={(v) => updateFormField('weight', v)}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>BF%</Text>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Gordura (%)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.body_fat_percentage?.toString() || ''}
                     onChangeText={(v) => updateFormField('body_fat_percentage', v)}
                   />
@@ -316,84 +421,79 @@ export default function BodyScreen() {
               </View>
 
               {/* Upper Body */}
-              <Text style={styles.sectionTitle}>Parte Superior</Text>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Peito (cm)</Text>
+              <Text style={[styles.formSectionTitle, { color: theme.text.secondary }]}>
+                PARTE SUPERIOR
+              </Text>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Peito (cm)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.chest?.toString() || ''}
                     onChangeText={(v) => updateFormField('chest', v)}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Ombros (cm)</Text>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Ombros (cm)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.shoulders?.toString() || ''}
                     onChangeText={(v) => updateFormField('shoulders', v)}
                   />
                 </View>
               </View>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Braço E (cm)</Text>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Biceps Esq.</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.left_arm?.toString() || ''}
                     onChangeText={(v) => updateFormField('left_arm', v)}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Braço D (cm)</Text>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Biceps Dir.</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.right_arm?.toString() || ''}
                     onChangeText={(v) => updateFormField('right_arm', v)}
                   />
                 </View>
               </View>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Pescoço (cm)</Text>
-                  <TextInput
-                    style={styles.input}
-                    keyboardType="decimal-pad"
-                    placeholder="0.0"
-                    value={formData.neck?.toString() || ''}
-                    onChangeText={(v) => updateFormField('neck', v)}
-                  />
-                </View>
-                <View style={styles.inputGroup} />
-              </View>
 
               {/* Core */}
-              <Text style={styles.sectionTitle}>Core</Text>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Cintura (cm)</Text>
+              <Text style={[styles.formSectionTitle, { color: theme.text.secondary }]}>CORE</Text>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Cintura (cm)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.waist?.toString() || ''}
                     onChangeText={(v) => updateFormField('waist', v)}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Quadril (cm)</Text>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Quadril (cm)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.hips?.toString() || ''}
                     onChangeText={(v) => updateFormField('hips', v)}
                   />
@@ -401,46 +501,52 @@ export default function BodyScreen() {
               </View>
 
               {/* Lower Body */}
-              <Text style={styles.sectionTitle}>Parte Inferior</Text>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Coxa E (cm)</Text>
+              <Text style={[styles.formSectionTitle, { color: theme.text.secondary }]}>
+                PARTE INFERIOR
+              </Text>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Coxa Esq.</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.left_thigh?.toString() || ''}
                     onChangeText={(v) => updateFormField('left_thigh', v)}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Coxa D (cm)</Text>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Coxa Dir.</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.right_thigh?.toString() || ''}
                     onChangeText={(v) => updateFormField('right_thigh', v)}
                   />
                 </View>
               </View>
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Panturrilha E (cm)</Text>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Panturrilha Esq.</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.left_calf?.toString() || ''}
                     onChangeText={(v) => updateFormField('left_calf', v)}
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Panturrilha D (cm)</Text>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Panturrilha Dir.</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
                     placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
                     value={formData.right_calf?.toString() || ''}
                     onChangeText={(v) => updateFormField('right_calf', v)}
                   />
@@ -448,15 +554,20 @@ export default function BodyScreen() {
               </View>
 
               {/* Notes */}
-              <Text style={styles.sectionTitle}>Observações</Text>
+              <Text style={[styles.formSectionTitle, { color: theme.text.secondary }]}>
+                OBSERVACOES
+              </Text>
               <TextInput
-                style={[styles.input, styles.notesInput]}
-                placeholder="Adicione observações..."
+                style={[styles.formInput, styles.notesInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
+                placeholder="Adicione observacoes..."
+                placeholderTextColor={theme.text.tertiary}
                 multiline
                 numberOfLines={3}
                 value={formData.notes || ''}
                 onChangeText={(v) => setFormData(prev => ({ ...prev, notes: v || undefined }))}
               />
+
+              <View style={{ height: 40 }} />
             </ScrollView>
           </View>
         </View>
@@ -468,146 +579,178 @@ export default function BodyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 100,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 16,
-  },
-  statsGrid: {
+  header: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-  },
-  statItem: {
-    width: '48%',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
     alignItems: 'center',
+    marginBottom: 24,
   },
-  statValue: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 24,
     fontWeight: '700',
-    color: '#007AFF',
   },
-  statLabel: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  statChange: {
-    fontSize: 12,
-    marginTop: 4,
+  historyLink: {
+    fontSize: 15,
     fontWeight: '500',
   },
-  statChangeUp: {
-    color: '#FF9500',
-  },
-  statChangeDown: {
-    color: '#34C759',
-  },
-  lastUpdate: {
-    fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  weightChart: {
+  mainStatsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 140,
-    paddingTop: 20,
+    gap: 10,
+    marginBottom: 16,
   },
-  chartBar: {
+  mainStatCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  mainStatLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  mainStatValue: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  mainStatUnit: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  progressCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  periodSelector: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 16,
+  },
+  periodButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  periodButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  changeStats: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    marginBottom: 16,
+  },
+  changeStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  changeValue: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  changePercent: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  chartContainer: {
+    height: 100,
+    position: 'relative',
+  },
+  chartArea: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 80,
+    paddingHorizontal: 8,
+  },
+  chartBarWrapper: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 4,
   },
-  chartValue: {
-    fontSize: 10,
-    color: '#8E8E93',
-    marginBottom: 4,
-  },
-  bar: {
-    width: '80%',
-    backgroundColor: '#007AFF',
+  chartBar: {
+    width: 8,
     borderRadius: 4,
     minHeight: 20,
   },
-  chartDate: {
-    fontSize: 9,
-    color: '#8E8E93',
-    marginTop: 4,
+  chartLine: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    height: 1,
   },
-  measurementItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-    paddingVertical: 12,
+  measurementsSection: {
+    marginBottom: 24,
   },
-  measurementHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  measurementDate: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
   },
-  measurementWeight: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#007AFF',
+  editLink: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  measurementDetails: {
+  measurementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
-  measurementDetail: {
-    fontSize: 12,
-    color: '#8E8E93',
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  measurementCard: {
+    width: '48%',
+    borderRadius: 14,
+    padding: 14,
   },
-  measurementNotes: {
-    fontSize: 12,
-    color: '#8E8E93',
-    fontStyle: 'italic',
-    marginTop: 8,
+  measurementIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  measurementLabel: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  measurementValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  measurementValue: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  measurementUnit: {
+    fontSize: 13,
+  },
+  lastUpdateText: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 16,
   },
   fab: {
     position: 'absolute',
@@ -615,32 +758,23 @@ const styles = StyleSheet.create({
     bottom: 20,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  fabText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '400',
-    lineHeight: 32,
-    marginTop: -2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '90%',
   },
   modalHeader: {
@@ -649,60 +783,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+  },
+  modalHeaderButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  saveButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  saveButtonText: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#000000',
   },
-  modalCancel: {
-    fontSize: 17,
-    color: '#007AFF',
-  },
-  modalSave: {
-    fontSize: 17,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  modalSaveDisabled: {
-    color: '#C7C7CC',
-  },
   modalForm: {
-    padding: 16,
+    padding: 20,
   },
-  sectionTitle: {
-    fontSize: 14,
+  formSectionTitle: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
-    marginTop: 16,
+    letterSpacing: 0.5,
     marginBottom: 12,
-    textTransform: 'uppercase',
+    marginTop: 8,
   },
-  inputRow: {
+  formRow: {
     flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
   },
-  inputGroup: {
+  formField: {
     flex: 1,
   },
-  inputLabel: {
+  formLabel: {
     fontSize: 13,
-    color: '#8E8E93',
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  formInput: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     fontSize: 16,
-    color: '#000000',
   },
   notesInput: {
     height: 80,
     textAlignVertical: 'top',
-    marginBottom: 40,
   },
 });

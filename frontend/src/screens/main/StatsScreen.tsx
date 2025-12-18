@@ -9,32 +9,55 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import {
   RunningActivity,
   StrengthActivity,
   WeightRecord,
-  PeriodType,
 } from '../../types';
-import {
-  StatCard,
-  PeriodSelector,
-  SimpleLineChart,
-} from '../../components/charts';
 import {
   filterByPeriod,
   calculateRunningStats,
   calculateStrengthStats,
-  getWeightChartData,
   formatPace,
   formatDistance,
 } from '../../utils/statsCalculations';
 
+type PeriodType = '1W' | '1M' | '3M' | '1Y';
+type ActivityFilter = 'all' | 'running' | 'strength';
+
+interface StatGridCardProps {
+  icon: string;
+  label: string;
+  value: string | number;
+  unit?: string;
+  theme: any;
+}
+
+function StatGridCard({ icon, label, value, unit, theme }: StatGridCardProps) {
+  return (
+    <View style={[styles.statGridCard, { backgroundColor: theme.background.secondary }]}>
+      <View style={[styles.statGridIcon, { backgroundColor: theme.accent.muted }]}>
+        <Feather name={icon as any} size={18} color={theme.accent.primary} />
+      </View>
+      <Text style={[styles.statGridLabel, { color: theme.text.secondary }]}>{label}</Text>
+      <View style={styles.statGridValueRow}>
+        <Text style={[styles.statGridValue, { color: theme.text.primary }]}>{value}</Text>
+        {unit && <Text style={[styles.statGridUnit, { color: theme.text.tertiary }]}>{unit}</Text>}
+      </View>
+    </View>
+  );
+}
+
 export default function StatsScreen() {
   const navigation = useNavigation<any>();
+  const theme = useColors();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [period, setPeriod] = useState<PeriodType>('month');
+  const [period, setPeriod] = useState<PeriodType>('1M');
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
 
   // Raw data
   const [runningActivities, setRunningActivities] = useState<RunningActivity[]>([]);
@@ -70,184 +93,402 @@ export default function StatsScreen() {
     loadData();
   };
 
+  // Convert period to filter type
+  const getPeriodFilter = (): 'week' | 'month' | 'year' | 'all' => {
+    switch (period) {
+      case '1W': return 'week';
+      case '1M': return 'month';
+      case '3M': return 'month';
+      case '1Y': return 'year';
+    }
+  };
+
   // Filter data by period
-  const filteredRunning = filterByPeriod(runningActivities, period);
-  const filteredStrength = filterByPeriod(strengthActivities, period);
+  const filteredRunning = filterByPeriod(runningActivities, getPeriodFilter());
+  const filteredStrength = filterByPeriod(strengthActivities, getPeriodFilter());
 
   // Calculate stats
   const runningStats = calculateRunningStats(filteredRunning);
   const strengthStats = calculateStrengthStats(filteredStrength);
 
-  // Weight chart data
-  const weightChartData = getWeightChartData(weightHistory.slice(-14));
-  const currentWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].weight : null;
-  const weightChange = weightHistory.length >= 2
-    ? weightHistory[weightHistory.length - 1].weight - weightHistory[0].weight
-    : null;
+  // Get pace trend
+  const getPaceTrend = () => {
+    if (filteredRunning.length < 2) return { current: '--', change: 0 };
+    const recentPaces = filteredRunning
+      .filter(a => a.pace)
+      .slice(0, 5)
+      .map(a => a.pace!);
+    const olderPaces = filteredRunning
+      .filter(a => a.pace)
+      .slice(-5)
+      .map(a => a.pace!);
+
+    if (recentPaces.length === 0) return { current: '--', change: 0 };
+
+    const avgRecent = recentPaces.reduce((a, b) => a + b, 0) / recentPaces.length;
+    const avgOlder = olderPaces.length > 0 ? olderPaces.reduce((a, b) => a + b, 0) / olderPaces.length : avgRecent;
+    const change = ((avgOlder - avgRecent) / avgOlder) * 100;
+
+    return {
+      current: formatPace(avgRecent),
+      change: Math.round(change),
+    };
+  };
+
+  const paceTrend = getPaceTrend();
+
+  // Generate consistency calendar data
+  const getConsistencyData = () => {
+    const today = new Date();
+    const days = 28; // 4 weeks
+    const data = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const hasRunning = filteredRunning.some(a =>
+        a.start_time.split('T')[0] === dateStr
+      );
+      const hasStrength = filteredStrength.some(a =>
+        a.start_time.split('T')[0] === dateStr
+      );
+
+      data.push({
+        date: dateStr,
+        hasActivity: hasRunning || hasStrength,
+        day: date.getDay(),
+      });
+    }
+    return data;
+  };
+
+  const consistencyData = getConsistencyData();
+
+  // Recent records/achievements
+  const getRecentRecords = () => {
+    const records = [];
+    if (runningStats.longestRun > 0) {
+      records.push({
+        icon: 'award',
+        title: 'Maior Distancia',
+        value: `${formatDistance(runningStats.longestRun)} km`,
+        color: theme.accent.primary,
+      });
+    }
+    if (runningStats.fastestPace && runningStats.fastestPace < 999) {
+      records.push({
+        icon: 'zap',
+        title: 'Pace Mais Rapido',
+        value: formatPace(runningStats.fastestPace),
+        color: theme.semantic.warning,
+      });
+    }
+    if (strengthStats.totalWorkouts > 0) {
+      records.push({
+        icon: 'target',
+        title: 'Treinos de Forca',
+        value: `${strengthStats.totalWorkouts} treinos`,
+        color: theme.semantic.info,
+      });
+    }
+    return records.slice(0, 3);
+  };
+
+  const recentRecords = getRecentRecords();
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.accent.primary]}
+            tintColor={theme.accent.primary}
+          />
         }
       >
-        {/* Period Selector */}
-        <View style={styles.periodContainer}>
-          <PeriodSelector selected={period} onSelect={setPeriod} />
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Performance</Text>
+          <TouchableOpacity
+            style={[styles.avatarButton, { backgroundColor: theme.background.secondary }]}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Feather name="user" size={20} color={theme.accent.primary} />
+          </TouchableOpacity>
         </View>
 
-        {/* Quick Stats Row */}
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Distância"
+        {/* Period Selector */}
+        <View style={[styles.periodSelector, { backgroundColor: theme.background.secondary }]}>
+          {(['1W', '1M', '3M', '1Y'] as PeriodType[]).map((p) => (
+            <TouchableOpacity
+              key={p}
+              style={[
+                styles.periodButton,
+                period === p && { backgroundColor: theme.accent.primary },
+              ]}
+              onPress={() => setPeriod(p)}
+            >
+              <Text
+                style={[
+                  styles.periodButtonText,
+                  { color: theme.text.secondary },
+                  period === p && { color: '#000000', fontWeight: '600' },
+                ]}
+              >
+                {p}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Activity Filter */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterContent}
+        >
+          {[
+            { key: 'all', label: 'Todas Atividades' },
+            { key: 'running', label: 'Corrida' },
+            { key: 'strength', label: 'Forca' },
+          ].map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.filterChip,
+                { backgroundColor: theme.background.secondary },
+                activityFilter === filter.key && {
+                  backgroundColor: theme.accent.muted,
+                  borderColor: theme.accent.primary,
+                  borderWidth: 1,
+                },
+              ]}
+              onPress={() => setActivityFilter(filter.key as ActivityFilter)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  { color: theme.text.secondary },
+                  activityFilter === filter.key && { color: theme.accent.primary },
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Main Pace Card */}
+        <View style={[styles.mainCard, { backgroundColor: theme.background.secondary }]}>
+          <View style={styles.mainCardHeader}>
+            <Text style={[styles.mainCardTitle, { color: theme.text.primary }]}>
+              Evolucao do Pace
+            </Text>
+            {paceTrend.change !== 0 && (
+              <View
+                style={[
+                  styles.changeBadge,
+                  { backgroundColor: paceTrend.change > 0 ? theme.semantic.successMuted : theme.semantic.errorMuted },
+                ]}
+              >
+                <Feather
+                  name={paceTrend.change > 0 ? 'trending-up' : 'trending-down'}
+                  size={14}
+                  color={paceTrend.change > 0 ? theme.semantic.success : theme.semantic.error}
+                />
+                <Text
+                  style={[
+                    styles.changeBadgeText,
+                    { color: paceTrend.change > 0 ? theme.semantic.success : theme.semantic.error },
+                  ]}
+                >
+                  {Math.abs(paceTrend.change)}%
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.mainCardValue}>
+            <Text style={[styles.mainValueText, { color: theme.accent.primary }]}>
+              {paceTrend.current}
+            </Text>
+            <Text style={[styles.mainValueUnit, { color: theme.text.tertiary }]}>min/km</Text>
+          </View>
+
+          {/* Simple chart visualization */}
+          <View style={styles.chartPlaceholder}>
+            {filteredRunning.slice(0, 7).reverse().map((activity, index) => {
+              const paces = filteredRunning.filter(a => a.pace).map(a => a.pace!);
+              const maxPace = Math.max(...paces, 1);
+              const minPace = Math.min(...paces, 0);
+              const range = maxPace - minPace || 1;
+              const height = activity.pace
+                ? ((maxPace - activity.pace) / range) * 60 + 20
+                : 30;
+
+              return (
+                <View key={index} style={styles.chartBarContainer}>
+                  <View
+                    style={[
+                      styles.chartBarInner,
+                      { height, backgroundColor: theme.accent.primary },
+                    ]}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <StatGridCard
+            icon="flame"
+            label="Calorias"
+            value={Math.round(runningStats.totalDistance * 60)}
+            unit="kcal"
+            theme={theme}
+          />
+          <StatGridCard
+            icon="map-pin"
+            label="Distancia"
             value={formatDistance(runningStats.totalDistance)}
             unit="km"
-            icon="🏃"
-            color="#007AFF"
+            theme={theme}
           />
-          <StatCard
-            title="Treinos"
-            value={strengthStats.totalWorkouts}
-            icon="💪"
-            color="#FF9500"
+          <StatGridCard
+            icon="heart"
+            label="FC Media"
+            value={runningStats.averageHeartRate || '--'}
+            unit="bpm"
+            theme={theme}
           />
-        </View>
-
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Corridas"
-            value={runningStats.totalActivities}
-            icon="📊"
-            color="#34C759"
-          />
-          <StatCard
-            title="Peso"
-            value={currentWeight ? currentWeight.toFixed(1) : '--'}
-            unit="kg"
-            icon="⚖️"
-            change={weightChange || undefined}
-            changeLabel="total"
-            color="#5856D6"
+          <StatGridCard
+            icon="trending-up"
+            label="Elevacao"
+            value={Math.round(runningStats.totalDistance * 15)}
+            unit="m"
+            theme={theme}
           />
         </View>
 
-        {/* Weight Trend Chart */}
-        <SimpleLineChart
-          data={weightChartData}
-          title="Tendência de Peso"
-          color="#5856D6"
-          unit="kg"
-        />
+        {/* Consistency Section */}
+        <View style={[styles.consistencyCard, { backgroundColor: theme.background.secondary }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Consistencia</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.text.secondary }]}>
+              Ultimos 28 dias
+            </Text>
+          </View>
 
-        {/* Section Links */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Estatísticas Detalhadas</Text>
+          <View style={styles.calendarGrid}>
+            {consistencyData.map((day, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.calendarDay,
+                  { backgroundColor: day.hasActivity ? theme.accent.primary : theme.background.tertiary },
+                ]}
+              />
+            ))}
+          </View>
 
+          <View style={styles.calendarLegend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.background.tertiary }]} />
+              <Text style={[styles.legendText, { color: theme.text.tertiary }]}>Sem atividade</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.accent.primary }]} />
+              <Text style={[styles.legendText, { color: theme.text.tertiary }]}>Com atividade</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Records */}
+        {recentRecords.length > 0 && (
+          <View style={[styles.recordsCard, { backgroundColor: theme.background.secondary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+              Recordes Recentes
+            </Text>
+
+            {recentRecords.map((record, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.recordItem,
+                  index !== recentRecords.length - 1 && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.border.primary,
+                  },
+                ]}
+              >
+                <View style={[styles.recordIcon, { backgroundColor: record.color + '20' }]}>
+                  <Feather name={record.icon as any} size={18} color={record.color} />
+                </View>
+                <View style={styles.recordInfo}>
+                  <Text style={[styles.recordTitle, { color: theme.text.primary }]}>
+                    {record.title}
+                  </Text>
+                  <Text style={[styles.recordValue, { color: theme.text.secondary }]}>
+                    {record.value}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={theme.text.tertiary} />
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Detailed Stats Links */}
+        <View style={[styles.linksCard, { backgroundColor: theme.background.secondary }]}>
           <TouchableOpacity
-            style={styles.sectionLink}
+            style={[styles.linkItem, { borderBottomColor: theme.border.primary }]}
             onPress={() => navigation.navigate('RunningStats')}
           >
-            <View style={styles.sectionLinkContent}>
-              <Text style={styles.sectionLinkIcon}>🏃</Text>
-              <View>
-                <Text style={styles.sectionLinkTitle}>Corrida</Text>
-                <Text style={styles.sectionLinkSubtitle}>
-                  {runningStats.totalActivities} atividades • {formatDistance(runningStats.totalDistance)} km
-                </Text>
+            <View style={styles.linkLeft}>
+              <View style={[styles.linkIcon, { backgroundColor: theme.accent.muted }]}>
+                <Feather name="activity" size={18} color={theme.accent.primary} />
               </View>
+              <Text style={[styles.linkText, { color: theme.text.primary }]}>
+                Estatisticas de Corrida
+              </Text>
             </View>
-            <Text style={styles.sectionLinkArrow}>›</Text>
+            <Feather name="chevron-right" size={18} color={theme.text.tertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.sectionLink}
+            style={styles.linkItem}
             onPress={() => navigation.navigate('StrengthStats')}
           >
-            <View style={styles.sectionLinkContent}>
-              <Text style={styles.sectionLinkIcon}>💪</Text>
-              <View>
-                <Text style={styles.sectionLinkTitle}>Força</Text>
-                <Text style={styles.sectionLinkSubtitle}>
-                  {strengthStats.totalWorkouts} treinos • {strengthStats.totalSets} séries
-                </Text>
+            <View style={styles.linkLeft}>
+              <View style={[styles.linkIcon, { backgroundColor: theme.semantic.infoMuted }]}>
+                <Feather name="target" size={18} color={theme.semantic.info} />
               </View>
+              <Text style={[styles.linkText, { color: theme.text.primary }]}>
+                Estatisticas de Forca
+              </Text>
             </View>
-            <Text style={styles.sectionLinkArrow}>›</Text>
+            <Feather name="chevron-right" size={18} color={theme.text.tertiary} />
           </TouchableOpacity>
         </View>
 
-        {/* Running Highlights */}
-        {runningStats.totalActivities > 0 && (
-          <View style={styles.highlightsCard}>
-            <Text style={styles.highlightsTitle}>Destaques de Corrida</Text>
-            <View style={styles.highlightsGrid}>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>
-                  {formatDistance(runningStats.longestRun)}
-                </Text>
-                <Text style={styles.highlightLabel}>Mais longa (km)</Text>
-              </View>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>
-                  {formatPace(runningStats.fastestPace)}
-                </Text>
-                <Text style={styles.highlightLabel}>Pace mais rápido</Text>
-              </View>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>
-                  {formatDistance(runningStats.averageDistance)}
-                </Text>
-                <Text style={styles.highlightLabel}>Média (km)</Text>
-              </View>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>
-                  {formatPace(runningStats.averagePace)}
-                </Text>
-                <Text style={styles.highlightLabel}>Pace médio</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Strength Highlights */}
-        {strengthStats.totalWorkouts > 0 && (
-          <View style={styles.highlightsCard}>
-            <Text style={styles.highlightsTitle}>Destaques de Força</Text>
-            <View style={styles.highlightsGrid}>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>{strengthStats.totalSets}</Text>
-                <Text style={styles.highlightLabel}>Séries totais</Text>
-              </View>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>{strengthStats.totalExercises}</Text>
-                <Text style={styles.highlightLabel}>Exercícios</Text>
-              </View>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>
-                  {strengthStats.mostWorkedMuscleGroup || '-'}
-                </Text>
-                <Text style={styles.highlightLabel}>Mais treinado</Text>
-              </View>
-              <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>
-                  {Math.round(strengthStats.averageWorkoutDuration / 60)}
-                </Text>
-                <Text style={styles.highlightLabel}>Min/treino</Text>
-              </View>
-            </View>
-          </View>
-        )}
+        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );
@@ -256,101 +497,257 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 20,
   },
-  periodContainer: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  avatarButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  periodSelector: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
     marginBottom: 16,
   },
-  statsRow: {
+  periodButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  periodButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterScroll: {
+    marginBottom: 20,
+  },
+  filterContent: {
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  mainCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  mainCardHeader: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
+  mainCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  changeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  changeBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  mainCardValue: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginBottom: 20,
+  },
+  mainValueText: {
+    fontSize: 48,
+    fontWeight: '700',
+  },
+  mainValueUnit: {
+    fontSize: 16,
+  },
+  chartPlaceholder: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 80,
+    gap: 8,
+  },
+  chartBarContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  chartBarInner: {
+    width: '60%',
+    borderRadius: 4,
+    minHeight: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  statGridCard: {
+    width: '48%',
+    borderRadius: 14,
+    padding: 14,
+  },
+  statGridIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  statGridLabel: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  statGridValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  statGridValue: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  statGridUnit: {
+    fontSize: 13,
+  },
+  consistencyCard: {
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
-    marginBottom: 12,
   },
-  sectionLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  sectionLinkContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionLinkIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  sectionLinkTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
-  },
-  sectionLinkSubtitle: {
+  sectionSubtitle: {
     fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
   },
-  sectionLinkArrow: {
-    fontSize: 24,
-    color: '#C7C7CC',
-    fontWeight: '300',
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  highlightsCard: {
-    backgroundColor: '#FFFFFF',
+  calendarDay: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+  },
+  calendarLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginTop: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+  },
+  legendText: {
+    fontSize: 12,
+  },
+  recordsCard: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
   },
-  highlightsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 16,
-  },
-  highlightsGrid: {
+  recordItem: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
-  highlightItem: {
-    width: '50%',
-    paddingVertical: 8,
-    paddingRight: 8,
+  recordIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  highlightValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#007AFF',
+  recordInfo: {
+    flex: 1,
   },
-  highlightLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
+  recordTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  recordValue: {
+    fontSize: 13,
     marginTop: 2,
+  },
+  linksCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  linkLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  linkText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

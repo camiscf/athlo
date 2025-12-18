@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { RunningActivity, PeriodType } from '../../types';
 import {
@@ -28,6 +30,7 @@ import {
 } from '../../utils/statsCalculations';
 
 export default function RunningStatsScreen() {
+  const theme = useColors();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [period, setPeriod] = useState<PeriodType>('month');
@@ -67,19 +70,24 @@ export default function RunningStatsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.accent.primary]}
+            tintColor={theme.accent.primary}
+          />
         }
       >
         {/* Period Selector */}
@@ -93,14 +101,14 @@ export default function RunningStatsScreen() {
             title="Distância Total"
             value={formatDistance(stats.totalDistance)}
             unit="km"
-            icon="📏"
-            color="#007AFF"
+            icon="distance"
+            color={theme.accent.primary}
           />
           <StatCard
             title="Tempo Total"
             value={formatDuration(stats.totalDuration)}
-            icon="⏱️"
-            color="#FF9500"
+            icon="time"
+            color={theme.semantic.warning}
           />
         </View>
 
@@ -108,15 +116,15 @@ export default function RunningStatsScreen() {
           <StatCard
             title="Corridas"
             value={stats.totalActivities}
-            icon="🏃"
-            color="#34C759"
+            icon="running"
+            color={theme.semantic.success}
           />
           <StatCard
             title="Pace Médio"
             value={formatPace(stats.averagePace)}
             unit="/km"
-            icon="⚡"
-            color="#5856D6"
+            icon="pace"
+            color={theme.semantic.info}
           />
         </View>
 
@@ -124,7 +132,7 @@ export default function RunningStatsScreen() {
         <SimpleLineChart
           data={distanceChartData}
           title="Distância por Corrida"
-          color="#007AFF"
+          color={theme.accent.primary}
           unit="km"
         />
 
@@ -132,7 +140,7 @@ export default function RunningStatsScreen() {
         <SimpleLineChart
           data={paceChartData}
           title="Pace por Corrida"
-          color="#FF9500"
+          color={theme.semantic.warning}
           unit="min/km"
           formatValue={(v) => formatPace(v * 60)}
         />
@@ -141,47 +149,47 @@ export default function RunningStatsScreen() {
         <SimpleBarChart
           data={weeklyData}
           title="Distância Semanal"
-          color="#34C759"
+          color={theme.semantic.success}
           unit="km"
         />
 
         {/* Records */}
-        <View style={styles.recordsCard}>
-          <Text style={styles.recordsTitle}>Recordes</Text>
+        <View style={[styles.recordsCard, { backgroundColor: theme.background.secondary }]}>
+          <Text style={[styles.recordsTitle, { color: theme.text.primary }]}>Recordes</Text>
           <View style={styles.recordsGrid}>
             <View style={styles.recordItem}>
-              <Text style={styles.recordLabel}>Corrida mais longa</Text>
-              <Text style={styles.recordValue}>
+              <Text style={[styles.recordLabel, { color: theme.text.secondary }]}>Corrida mais longa</Text>
+              <Text style={[styles.recordValue, { color: theme.accent.primary }]}>
                 {formatDistance(stats.longestRun)} km
               </Text>
             </View>
             <View style={styles.recordItem}>
-              <Text style={styles.recordLabel}>Pace mais rápido</Text>
-              <Text style={styles.recordValue}>
+              <Text style={[styles.recordLabel, { color: theme.text.secondary }]}>Pace mais rápido</Text>
+              <Text style={[styles.recordValue, { color: theme.accent.primary }]}>
                 {formatPace(stats.fastestPace)} /km
               </Text>
             </View>
             <View style={styles.recordItem}>
-              <Text style={styles.recordLabel}>Média por corrida</Text>
-              <Text style={styles.recordValue}>
+              <Text style={[styles.recordLabel, { color: theme.text.secondary }]}>Média por corrida</Text>
+              <Text style={[styles.recordValue, { color: theme.accent.primary }]}>
                 {formatDistance(stats.averageDistance)} km
               </Text>
             </View>
             <View style={styles.recordItem}>
-              <Text style={styles.recordLabel}>Total de atividades</Text>
-              <Text style={styles.recordValue}>{stats.totalActivities}</Text>
+              <Text style={[styles.recordLabel, { color: theme.text.secondary }]}>Total de atividades</Text>
+              <Text style={[styles.recordValue, { color: theme.accent.primary }]}>{stats.totalActivities}</Text>
             </View>
           </View>
         </View>
 
         {/* Empty State */}
         {stats.totalActivities === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🏃</Text>
-            <Text style={styles.emptyText}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.background.secondary }]}>
+            <Feather name="zap" size={48} color={theme.text.tertiary} style={styles.emptyIcon} />
+            <Text style={[styles.emptyText, { color: theme.text.primary }]}>
               Nenhuma corrida registrada neste período
             </Text>
-            <Text style={styles.emptySubtext}>
+            <Text style={[styles.emptySubtext, { color: theme.text.secondary }]}>
               Registre suas corridas para ver estatísticas detalhadas
             </Text>
           </View>
@@ -194,13 +202,11 @@ export default function RunningStatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   scrollView: {
     flex: 1,
@@ -218,7 +224,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   recordsCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -226,7 +231,6 @@ const styles = StyleSheet.create({
   recordsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 16,
   },
   recordsGrid: {
@@ -240,34 +244,28 @@ const styles = StyleSheet.create({
   },
   recordLabel: {
     fontSize: 12,
-    color: '#8E8E93',
     marginBottom: 4,
   },
   recordValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#007AFF',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
   },
 });

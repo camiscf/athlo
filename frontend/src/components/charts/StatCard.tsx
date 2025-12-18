@@ -1,5 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
+
+// Mapeamento de nomes para ícones Feather
+const iconMap: Record<string, string> = {
+  running: 'zap',
+  strength: 'target',
+  distance: 'map-pin',
+  time: 'clock',
+  pace: 'trending-up',
+  weight: 'disc',
+  chart: 'bar-chart-2',
+  sets: 'layers',
+  reps: 'hash',
+  calendar: 'calendar',
+};
 
 interface StatCardProps {
   title: string;
@@ -18,27 +34,40 @@ export default function StatCard({
   icon,
   change,
   changeLabel,
-  color = '#007AFF',
+  color,
 }: StatCardProps) {
+  const theme = useColors();
+  const accentColor = color || theme.accent.primary;
   const hasChange = change !== undefined && change !== null;
   const isPositive = change && change > 0;
 
+  const featherIcon = icon ? (iconMap[icon] || 'circle') : null;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       <View style={styles.header}>
-        {icon && <Text style={styles.icon}>{icon}</Text>}
-        <Text style={styles.title}>{title}</Text>
+        {featherIcon && (
+          <Feather name={featherIcon as any} size={14} color={accentColor} style={styles.icon} />
+        )}
+        <Text style={[styles.title, { color: theme.text.secondary }]}>{title}</Text>
       </View>
       <View style={styles.valueContainer}>
-        <Text style={[styles.value, { color }]}>{value}</Text>
-        {unit && <Text style={styles.unit}>{unit}</Text>}
+        <Text style={[styles.value, { color: accentColor }]}>{value}</Text>
+        {unit && <Text style={[styles.unit, { color: theme.text.secondary }]}>{unit}</Text>}
       </View>
       {hasChange && (
         <View style={styles.changeContainer}>
-          <Text style={[styles.change, isPositive ? styles.changeUp : styles.changeDown]}>
+          <Text style={[
+            styles.change,
+            { color: isPositive ? theme.semantic.warning : theme.semantic.success }
+          ]}>
             {isPositive ? '+' : ''}{typeof change === 'number' ? change.toFixed(1) : change}
           </Text>
-          {changeLabel && <Text style={styles.changeLabel}>{changeLabel}</Text>}
+          {changeLabel && (
+            <Text style={[styles.changeLabel, { color: theme.text.secondary }]}>
+              {changeLabel}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -47,7 +76,6 @@ export default function StatCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     minWidth: 140,
@@ -59,12 +87,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   icon: {
-    fontSize: 16,
     marginRight: 6,
   },
   title: {
     fontSize: 13,
-    color: '#8E8E93',
     fontWeight: '500',
   },
   valueContainer: {
@@ -77,7 +103,6 @@ const styles = StyleSheet.create({
   },
   unit: {
     fontSize: 14,
-    color: '#8E8E93',
     marginLeft: 4,
   },
   changeContainer: {
@@ -89,15 +114,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  changeUp: {
-    color: '#FF9500',
-  },
-  changeDown: {
-    color: '#34C759',
-  },
   changeLabel: {
     fontSize: 12,
-    color: '#8E8E93',
     marginLeft: 4,
   },
 });

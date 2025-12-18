@@ -8,19 +8,133 @@ import {
   RefreshControl,
   TouchableOpacity,
   useWindowDimensions,
+  ImageBackground,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { RunningActivity, StrengthActivity } from '../../types';
 
 type Activity = (RunningActivity & { type: 'running' }) | (StrengthActivity & { type: 'strength' });
 
+interface QuickStartCardProps {
+  icon: string;
+  label: string;
+  color: string;
+  theme: any;
+  onPress: () => void;
+  selected?: boolean;
+}
+
+function QuickStartCard({ icon, label, color, theme, onPress, selected }: QuickStartCardProps) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.quickStartCard,
+        { backgroundColor: theme.background.secondary },
+        selected && { borderColor: theme.accent.primary, borderWidth: 2 },
+      ]}
+      onPress={onPress}
+    >
+      <View style={[styles.quickStartIconContainer, { backgroundColor: color + '20' }]}>
+        <Feather name={icon as any} size={24} color={color} />
+      </View>
+      <Text style={[styles.quickStartLabel, { color: theme.text.primary }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+interface WeeklyStatCardProps {
+  icon: string;
+  value: string;
+  label: string;
+  subtitle?: string;
+  theme: any;
+  isPrimary?: boolean;
+}
+
+function WeeklyStatCard({ icon, value, label, subtitle, theme, isPrimary }: WeeklyStatCardProps) {
+  return (
+    <View
+      style={[
+        styles.weeklyStatCard,
+        { backgroundColor: isPrimary ? theme.accent.primary : theme.background.secondary },
+      ]}
+    >
+      <View style={styles.weeklyStatHeader}>
+        <Feather
+          name={icon as any}
+          size={18}
+          color={isPrimary ? '#000000' : theme.accent.primary}
+        />
+      </View>
+      <Text
+        style={[
+          styles.weeklyStatValue,
+          { color: isPrimary ? '#000000' : theme.text.primary },
+        ]}
+      >
+        {value}
+      </Text>
+      <Text
+        style={[
+          styles.weeklyStatLabel,
+          { color: isPrimary ? 'rgba(0,0,0,0.7)' : theme.text.secondary },
+        ]}
+      >
+        {label}
+      </Text>
+      {subtitle && (
+        <Text
+          style={[
+            styles.weeklyStatSubtitle,
+            { color: isPrimary ? 'rgba(0,0,0,0.5)' : theme.text.tertiary },
+          ]}
+        >
+          {subtitle}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+interface GoalProgressProps {
+  label: string;
+  current: number;
+  target: number;
+  unit: string;
+  theme: any;
+}
+
+function GoalProgress({ label, current, target, unit, theme }: GoalProgressProps) {
+  const progress = Math.min((current / target) * 100, 100);
+  return (
+    <View style={styles.goalItem}>
+      <View style={styles.goalHeader}>
+        <Text style={[styles.goalLabel, { color: theme.text.primary }]}>{label}</Text>
+        <Text style={[styles.goalValue, { color: theme.text.secondary }]}>
+          {current.toFixed(1)}/{target} {unit}
+        </Text>
+      </View>
+      <View style={[styles.goalBarBg, { backgroundColor: theme.background.tertiary }]}>
+        <View
+          style={[
+            styles.goalBarFill,
+            { backgroundColor: theme.accent.primary, width: `${progress}%` },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const theme = useColors();
   const { width } = useWindowDimensions();
-  const isSmallScreen = width < 380;
   const [runningActivities, setRunningActivities] = useState<RunningActivity[]>([]);
   const [strengthActivities, setStrengthActivities] = useState<StrengthActivity[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
@@ -63,12 +177,9 @@ export default function HomeScreen() {
     }, [loadActivities])
   );
 
-  // Calcular estatísticas de corrida
+  // Calcular estatísticas
   const totalDistance = runningActivities.reduce((sum, a) => sum + (a.distance || 0), 0);
   const totalRunningDuration = runningActivities.reduce((sum, a) => sum + (a.duration || 0), 0);
-  const totalRunning = runningActivities.length;
-  const totalStrength = strengthActivities.length;
-  const totalActivities = totalRunning + totalStrength;
 
   // Atividades desta semana
   const now = new Date();
@@ -79,192 +190,273 @@ export default function HomeScreen() {
   const thisWeekRunning = runningActivities.filter(a => new Date(a.start_time) >= startOfWeek);
   const thisWeekStrength = strengthActivities.filter(a => new Date(a.start_time) >= startOfWeek);
   const weekDistance = thisWeekRunning.reduce((sum, a) => sum + (a.distance || 0), 0);
+  const weekDuration = thisWeekRunning.reduce((sum, a) => sum + (a.duration || 0), 0) +
+    thisWeekStrength.reduce((sum, a) => sum + (a.duration || 0), 0);
   const weekActivitiesCount = thisWeekRunning.length + thisWeekStrength.length;
 
-  // Últimas 3 atividades (combinadas)
-  const recentActivities = allActivities.slice(0, 3);
+  // Últimas 5 atividades
+  const recentActivities = allActivities.slice(0, 5);
 
-  function formatDuration(seconds: number, short = false): string {
+  function formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    if (short) {
-      if (hours > 0) {
-        return `${hours}h${minutes}m`;
-      }
-      return `${minutes}m`;
-    }
     if (hours > 0) {
-      return `${hours}h ${minutes}min`;
+      return `${hours}h ${minutes}m`;
     }
-    return `${minutes}min`;
+    return `${minutes}m`;
   }
 
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Hoje';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Ontem';
+    }
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
     });
   }
 
+  function getActivityIcon(type: string): string {
+    switch (type) {
+      case 'running': return 'activity';
+      case 'strength': return 'target';
+      default: return 'activity';
+    }
+  }
+
+  function getActivityColor(type: string): string {
+    switch (type) {
+      case 'running': return theme.accent.primary;
+      case 'strength': return '#3B82F6';
+      default: return theme.accent.primary;
+    }
+  }
+
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background.primary }]}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={() => loadActivities(true)}
-          colors={['#007AFF']}
-          tintColor="#007AFF"
+          colors={[theme.accent.primary]}
+          tintColor={theme.accent.primary}
         />
       }
     >
       <View style={styles.content}>
-        {/* Saudação */}
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0] || 'Atleta'}!</Text>
-          <Text style={styles.subtitle}>Veja seu progresso</Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.greeting, { color: theme.text.secondary }]}>
+              Bem-vindo de volta
+            </Text>
+            <Text style={[styles.userName, { color: theme.text.primary }]}>
+              {user?.name?.split(' ')[0] || 'Atleta'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.avatarContainer, { backgroundColor: theme.background.secondary }]}
+            onPress={() => (navigation as any).navigate('Profile')}
+          >
+            <Feather name="user" size={22} color={theme.accent.primary} />
+          </TouchableOpacity>
         </View>
 
-        {/* Cards de estatísticas da semana */}
+        {/* Quick Start */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Esta semana</Text>
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.statCardPrimary]}>
-              <Text style={styles.statValuePrimary}>{weekDistance.toFixed(1)}</Text>
-              <Text style={styles.statLabelPrimary}>km percorridos</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{weekActivitiesCount}</Text>
-              <Text style={styles.statLabel}>atividades</Text>
-            </View>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Iniciar Treino</Text>
+          <View style={styles.quickStartGrid}>
+            <QuickStartCard
+              icon="activity"
+              label="Corrida"
+              color={theme.accent.primary}
+              theme={theme}
+              onPress={() => (navigation as any).navigate('AddActivity', { activityType: 'running' })}
+            />
+            <QuickStartCard
+              icon="droplet"
+              label="Natacao"
+              color="#06B6D4"
+              theme={theme}
+              onPress={() => (navigation as any).navigate('AddActivity', { activityType: 'swimming' })}
+            />
+            <QuickStartCard
+              icon="disc"
+              label="Ciclismo"
+              color="#EC4899"
+              theme={theme}
+              onPress={() => (navigation as any).navigate('AddActivity', { activityType: 'cycling' })}
+            />
+            <QuickStartCard
+              icon="target"
+              label="Academia"
+              color="#3B82F6"
+              theme={theme}
+              onPress={() => (navigation as any).navigate('Divisions')}
+            />
           </View>
         </View>
 
-        {/* Cards de estatísticas totais */}
+        {/* Weekly Progress */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Total geral</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+              Progresso Semanal
+            </Text>
             <TouchableOpacity onPress={() => (navigation as any).navigate('Stats')}>
-              <Text style={styles.seeAll}>Ver estatísticas</Text>
+              <Text style={[styles.seeAll, { color: theme.accent.primary }]}>Ver mais</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCardSmall}>
-              <Text style={styles.statIcon}>🏃</Text>
-              <Text style={[styles.statValueSmall, isSmallScreen && styles.statValueSmallCompact]}>
-                {totalRunning}
-              </Text>
-              <Text style={styles.statLabelSmall}>corridas</Text>
-            </View>
-            <View style={styles.statCardSmall}>
-              <Text style={styles.statIcon}>💪</Text>
-              <Text style={[styles.statValueSmall, isSmallScreen && styles.statValueSmallCompact]}>
-                {totalStrength}
-              </Text>
-              <Text style={styles.statLabelSmall}>treinos</Text>
-            </View>
-            <View style={styles.statCardSmall}>
-              <Text style={styles.statIcon}>📏</Text>
-              <Text style={[styles.statValueSmall, isSmallScreen && styles.statValueSmallCompact]}>
-                {totalDistance.toFixed(1)}
-              </Text>
-              <Text style={styles.statLabelSmall}>km</Text>
-            </View>
+          <View style={styles.weeklyStatsRow}>
+            <WeeklyStatCard
+              icon="clock"
+              value={formatDuration(weekDuration)}
+              label="Tempo Ativo"
+              subtitle={`${weekActivitiesCount} treinos`}
+              theme={theme}
+              isPrimary
+            />
+            <WeeklyStatCard
+              icon="map-pin"
+              value={`${weekDistance.toFixed(1)}`}
+              label="Distancia (km)"
+              subtitle="corrida + ciclismo"
+              theme={theme}
+            />
           </View>
         </View>
 
-        {/* Botão Ver Estatísticas */}
-        <TouchableOpacity
-          style={styles.statsButton}
-          onPress={() => (navigation as any).navigate('Stats')}
-        >
-          <Text style={styles.statsButtonIcon}>📊</Text>
-          <View style={styles.statsButtonContent}>
-            <Text style={styles.statsButtonTitle}>Ver Estatísticas Completas</Text>
-            <Text style={styles.statsButtonSubtitle}>Gráficos e análise de desempenho</Text>
-          </View>
-          <Text style={styles.statsButtonArrow}>›</Text>
-        </TouchableOpacity>
-
-        {/* Atividades recentes */}
+        {/* My Goals */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Atividades recentes</Text>
-            {allActivities.length > 3 && (
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Minhas Metas</Text>
+            <TouchableOpacity>
+              <Text style={[styles.seeAll, { color: theme.accent.primary }]}>Editar</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.goalsCard, { backgroundColor: theme.background.secondary }]}>
+            <GoalProgress
+              label="Distancia Semanal"
+              current={weekDistance}
+              target={30}
+              unit="km"
+              theme={theme}
+            />
+            <GoalProgress
+              label="Treinos Semanais"
+              current={weekActivitiesCount}
+              target={5}
+              unit=""
+              theme={theme}
+            />
+          </View>
+        </View>
+
+        {/* Recent Activity */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+              Atividade Recente
+            </Text>
+            {allActivities.length > 5 && (
               <TouchableOpacity onPress={() => (navigation as any).navigate('Activities')}>
-                <Text style={styles.seeAll}>Ver todas</Text>
+                <Text style={[styles.seeAll, { color: theme.accent.primary }]}>Ver todas</Text>
               </TouchableOpacity>
             )}
           </View>
 
           {recentActivities.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📋</Text>
-              <Text style={styles.emptyText}>Nenhuma atividade ainda</Text>
+            <View style={[styles.emptyState, { backgroundColor: theme.background.secondary }]}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: theme.accent.muted }]}>
+                <Feather name="inbox" size={32} color={theme.accent.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>
+                Nenhuma atividade ainda
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: theme.text.secondary }]}>
+                Comece seu primeiro treino agora
+              </Text>
               <TouchableOpacity
-                style={styles.emptyButton}
+                style={[styles.emptyButton, { backgroundColor: theme.accent.primary }]}
                 onPress={() => (navigation as any).navigate('AddActivity')}
               >
-                <Text style={styles.emptyButtonText}>Registrar primeira atividade</Text>
+                <Text style={styles.emptyButtonText}>Iniciar Treino</Text>
+                <Feather name="arrow-right" size={18} color="#000000" />
               </TouchableOpacity>
             </View>
           ) : (
-            recentActivities.map((activity) => (
-              <View key={activity.id} style={styles.activityCard}>
-                <View style={styles.activityHeader}>
-                  <View style={styles.activityTitleRow}>
-                    <Text style={styles.activityIcon}>
-                      {activity.type === 'strength' ? '💪' : '🏃'}
-                    </Text>
-                    <Text style={styles.activityTitle} numberOfLines={1}>
+            <View style={[styles.activityList, { backgroundColor: theme.background.secondary }]}>
+              {recentActivities.map((activity, index) => (
+                <TouchableOpacity
+                  key={activity.id}
+                  style={[
+                    styles.activityItem,
+                    index !== recentActivities.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: theme.border.primary,
+                    },
+                  ]}
+                  onPress={() => {
+                    if (activity.type === 'strength') {
+                      (navigation as any).navigate('StrengthActivityDetail', { activityId: activity.id });
+                    } else {
+                      (navigation as any).navigate('ActivityDetail', { activityId: activity.id });
+                    }
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.activityIconContainer,
+                      { backgroundColor: getActivityColor(activity.type) + '20' },
+                    ]}
+                  >
+                    <Feather
+                      name={getActivityIcon(activity.type) as any}
+                      size={18}
+                      color={getActivityColor(activity.type)}
+                    />
+                  </View>
+                  <View style={styles.activityInfo}>
+                    <Text style={[styles.activityTitle, { color: theme.text.primary }]} numberOfLines={1}>
                       {activity.type === 'strength'
-                        ? (activity.title || activity.division_name || 'Treino de Força')
+                        ? (activity.title || activity.division_name || 'Treino de Forca')
                         : (activity.title || 'Corrida')}
                     </Text>
+                    <Text style={[styles.activityMeta, { color: theme.text.secondary }]}>
+                      {formatDate(activity.start_time)}
+                      {activity.type === 'running' && activity.distance
+                        ? ` • ${activity.distance.toFixed(1)} km`
+                        : ''}
+                      {activity.type === 'strength'
+                        ? ` • ${activity.exercises.length} exercicios`
+                        : ''}
+                    </Text>
                   </View>
-                  <Text style={styles.activityDate}>{formatDate(activity.start_time)}</Text>
-                </View>
-                <View style={styles.activityStats}>
-                  {activity.type === 'running' ? (
-                    <>
-                      {activity.distance !== null && (
-                        <Text style={styles.activityStat}>
-                          {activity.distance.toFixed(2)} km
-                        </Text>
-                      )}
-                      {activity.duration_formatted && (
-                        <Text style={styles.activityStat}>{activity.duration_formatted}</Text>
-                      )}
-                      {activity.pace_formatted && (
-                        <Text style={styles.activityStat}>{activity.pace_formatted}/km</Text>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.activityStatStrength}>
-                        {activity.exercises.length} exercícios
-                      </Text>
-                      {activity.duration && (
-                        <Text style={styles.activityStatStrength}>
-                          {formatDuration(activity.duration, true)}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                </View>
-              </View>
-            ))
+                  <Feather name="chevron-right" size={18} color={theme.text.tertiary} />
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
         </View>
+
+        {/* Bottom spacing for tab bar */}
+        <View style={{ height: 20 }} />
       </View>
     </ScrollView>
   );
@@ -273,216 +465,193 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   content: {
-    padding: 16,
+    padding: 20,
   },
   header: {
-    marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 28,
   },
+  headerLeft: {},
   greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: 14,
     marginBottom: 4,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
+  userName: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
-    marginBottom: 12,
+    marginBottom: 0,
   },
   seeAll: {
     fontSize: 14,
-    color: '#007AFF',
     fontWeight: '500',
   },
-  statsRow: {
+  quickStartGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
+    marginTop: 16,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  quickStartCard: {
+    width: '47%',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
   },
-  statCardPrimary: {
-    backgroundColor: '#007AFF',
-    flex: 1.5,
-  },
-  statValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  statValuePrimary: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  statLabelPrimary: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statCardSmall: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  quickStartIconContainer: {
+    width: 56,
+    height: 56,
     borderRadius: 16,
-    padding: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 0,
+    marginBottom: 12,
   },
-  statIcon: {
-    fontSize: 20,
-    marginBottom: 6,
+  quickStartLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  statValueSmall: {
-    fontSize: 18,
+  weeklyStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  weeklyStatCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 16,
+  },
+  weeklyStatHeader: {
+    marginBottom: 12,
+  },
+  weeklyStatValue: {
+    fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
-    textAlign: 'center',
+    marginBottom: 4,
   },
-  statValueSmallCompact: {
-    fontSize: 15,
+  weeklyStatLabel: {
+    fontSize: 13,
+    fontWeight: '500',
   },
-  statLabelSmall: {
-    fontSize: 10,
-    color: '#8E8E93',
+  weeklyStatSubtitle: {
+    fontSize: 12,
     marginTop: 4,
-    textAlign: 'center',
   },
-  activityCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
+  goalsCard: {
+    borderRadius: 16,
+    padding: 16,
+    gap: 16,
   },
-  activityHeader: {
+  goalItem: {},
+  goalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  activityTitleRow: {
+  goalLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  goalValue: {
+    fontSize: 13,
+  },
+  goalBarBg: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  goalBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  activityList: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
+    padding: 14,
   },
-  activityIcon: {
-    fontSize: 14,
-    marginRight: 6,
+  activityIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityInfo: {
+    flex: 1,
   },
   activityTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000000',
-    flex: 1,
+    marginBottom: 2,
   },
-  activityDate: {
+  activityMeta: {
     fontSize: 13,
-    color: '#8E8E93',
-  },
-  activityStats: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  activityStat: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  activityStatStrength: {
-    fontSize: 14,
-    color: '#34C759',
-    fontWeight: '500',
   },
   emptyState: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#8E8E93',
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  emptyButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  emptyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+  emptyTitle: {
+    fontSize: 17,
     fontWeight: '600',
+    marginBottom: 4,
   },
-  statsButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+  emptySubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    gap: 8,
   },
-  statsButtonIcon: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  statsButtonContent: {
-    flex: 1,
-  },
-  statsButtonTitle: {
+  emptyButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#000000',
-  },
-  statsButtonSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
-  statsButtonArrow: {
-    fontSize: 24,
-    color: '#C7C7CC',
-    fontWeight: '300',
   },
 });

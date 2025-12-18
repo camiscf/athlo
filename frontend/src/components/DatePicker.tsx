@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../context/ThemeContext';
 
 interface DatePickerProps {
   value: string; // formato YYYY-MM-DD
@@ -20,6 +22,7 @@ const MONTHS = [
 ];
 
 export default function DatePicker({ value, onChange, disabled }: DatePickerProps) {
+  const theme = useColors();
   const [isOpen, setIsOpen] = useState(false);
 
   // Parse da data atual ou usar hoje
@@ -117,14 +120,14 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
     <View>
       {/* Campo de input */}
       <TouchableOpacity
-        style={[styles.input, disabled && styles.inputDisabled]}
+        style={[styles.input, { backgroundColor: theme.background.secondary }, disabled && styles.inputDisabled]}
         onPress={() => !disabled && setIsOpen(true)}
         disabled={disabled}
       >
-        <Text style={styles.inputText}>
+        <Text style={[styles.inputText, { color: theme.text.primary }]}>
           {formatDisplayDate(value) || 'Selecionar data'}
         </Text>
-        <Text style={styles.calendarIcon}>📅</Text>
+        <Feather name="calendar" size={18} color={theme.text.tertiary} />
       </TouchableOpacity>
 
       {/* Modal do calendário */}
@@ -139,24 +142,24 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
           activeOpacity={1}
           onPress={() => setIsOpen(false)}
         >
-          <View style={styles.calendarContainer} onStartShouldSetResponder={() => true}>
+          <View style={[styles.calendarContainer, { backgroundColor: theme.background.secondary }]} onStartShouldSetResponder={() => true}>
             {/* Header do calendário */}
             <View style={styles.calendarHeader}>
               <TouchableOpacity onPress={goToPrevMonth} style={styles.navButton}>
-                <Text style={styles.navButtonText}>◀</Text>
+                <Feather name="chevron-left" size={20} color={theme.accent.primary} />
               </TouchableOpacity>
-              <Text style={styles.monthYearText}>
+              <Text style={[styles.monthYearText, { color: theme.text.primary }]}>
                 {MONTHS[viewMonth]} {viewYear}
               </Text>
               <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
-                <Text style={styles.navButtonText}>▶</Text>
+                <Feather name="chevron-right" size={20} color={theme.accent.primary} />
               </TouchableOpacity>
             </View>
 
             {/* Dias da semana */}
             <View style={styles.weekDaysRow}>
               {DAYS_OF_WEEK.map((day) => (
-                <Text key={day} style={styles.weekDayText}>
+                <Text key={day} style={[styles.weekDayText, { color: theme.text.tertiary }]}>
                   {day}
                 </Text>
               ))}
@@ -169,8 +172,8 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
                   key={index}
                   style={[
                     styles.dayCell,
-                    day && isSelectedDay(day) && styles.dayCellSelected,
-                    day && isToday(day) && !isSelectedDay(day) && styles.dayCellToday,
+                    day && isSelectedDay(day) && [styles.dayCellSelected, { backgroundColor: theme.accent.primary }],
+                    day && isToday(day) && !isSelectedDay(day) && [styles.dayCellToday, { borderColor: theme.accent.primary }],
                   ]}
                   onPress={() => day && handleDayPress(day)}
                   disabled={!day}
@@ -178,8 +181,9 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
                   <Text
                     style={[
                       styles.dayText,
+                      { color: theme.text.primary },
                       day && isSelectedDay(day) && styles.dayTextSelected,
-                      day && isToday(day) && !isSelectedDay(day) && styles.dayTextToday,
+                      day && isToday(day) && !isSelectedDay(day) && [styles.dayTextToday, { color: theme.accent.primary }],
                     ]}
                   >
                     {day || ''}
@@ -190,7 +194,7 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
 
             {/* Botão Hoje */}
             <TouchableOpacity
-              style={styles.todayButton}
+              style={[styles.todayButton, { backgroundColor: theme.background.tertiary }]}
               onPress={() => {
                 const today = new Date();
                 setViewMonth(today.getMonth());
@@ -201,7 +205,7 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
                 setIsOpen(false);
               }}
             >
-              <Text style={styles.todayButtonText}>Hoje</Text>
+              <Text style={[styles.todayButtonText, { color: theme.accent.primary }]}>Hoje</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -212,7 +216,6 @@ export default function DatePicker({ value, onChange, disabled }: DatePickerProp
 
 const styles = StyleSheet.create({
   input: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -225,19 +228,14 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 16,
-    color: '#000000',
-  },
-  calendarIcon: {
-    fontSize: 18,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   calendarContainer: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     width: 320,
@@ -252,14 +250,9 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 8,
   },
-  navButtonText: {
-    fontSize: 16,
-    color: '#007AFF',
-  },
   monthYearText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
   },
   weekDaysRow: {
     flexDirection: 'row',
@@ -270,7 +263,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '600',
-    color: '#8E8E93',
   },
   daysGrid: {
     flexDirection: 'row',
@@ -283,35 +275,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
   },
-  dayCellSelected: {
-    backgroundColor: '#007AFF',
-  },
+  dayCellSelected: {},
   dayCellToday: {
     borderWidth: 1,
-    borderColor: '#007AFF',
   },
   dayText: {
     fontSize: 16,
-    color: '#000000',
   },
   dayTextSelected: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontWeight: '600',
   },
   dayTextToday: {
-    color: '#007AFF',
     fontWeight: '600',
   },
   todayButton: {
     marginTop: 12,
     paddingVertical: 10,
-    backgroundColor: '#F2F2F7',
     borderRadius: 8,
     alignItems: 'center',
   },
   todayButtonText: {
     fontSize: 15,
-    color: '#007AFF',
     fontWeight: '600',
   },
 });

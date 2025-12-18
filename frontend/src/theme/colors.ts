@@ -1,55 +1,55 @@
 /**
  * Athlo Design System - Cores
- * Estética: Minimalista Premium
- * Tema Principal: Dark Mode com accent Amber/Dourado
+ * Estética: Premium Fitness - Dark mode com verde vibrante
+ * Inspirado no design FitCore
  */
 
 export const colors = {
   // ============================================
-  // DARK MODE (Prioritário)
+  // DARK MODE - PREMIUM FITNESS
   // ============================================
   dark: {
-    // Backgrounds
+    // Backgrounds - Preto profundo com tons verdes
     background: {
-      primary: '#0A0A0B',    // Fundo principal do app
-      secondary: '#141416',   // Cards, modais, containers
-      tertiary: '#1C1C1F',    // Inputs, elementos elevados
-      elevated: '#252528',    // Hover states, elementos destacados
+      primary: '#0A0F0D',     // Fundo principal - quase preto
+      secondary: '#111916',   // Cards, containers
+      tertiary: '#1A2420',    // Inputs, elementos elevados
+      elevated: '#243028',    // Hover states, destaques
     },
 
-    // Texto
+    // Texto - Alto contraste
     text: {
-      primary: '#FAFAFA',     // Títulos, valores principais
-      secondary: '#A1A1AA',   // Labels, descrições
-      tertiary: '#71717A',    // Placeholders, hints
-      disabled: '#52525B',    // Estados desabilitados
+      primary: '#FFFFFF',     // Títulos - branco puro
+      secondary: '#9CA3AF',   // Labels, descrições
+      tertiary: '#6B7280',    // Placeholders, hints
+      disabled: '#374151',    // Estados desabilitados
     },
 
-    // Cor de Destaque (Amber/Dourado)
+    // Cor de Destaque (Verde vibrante - Energia fitness)
     accent: {
-      primary: '#F59E0B',     // Botões principais, ícones ativos, CTAs
-      light: '#FBBF24',       // Hover states, destaques
-      dark: '#D97706',        // Pressed states
-      muted: '#F59E0B1A',     // Backgrounds com accent (10% opacity)
+      primary: '#22C55E',     // Verde vibrante - principal
+      light: '#4ADE80',       // Hover states
+      dark: '#16A34A',        // Pressed states
+      muted: '#22C55E15',     // Backgrounds sutis
     },
 
     // Estados Semânticos
     semantic: {
-      success: '#22C55E',         // Metas atingidas, trends positivos
-      successMuted: '#22C55E1A',  // Background de sucesso
-      warning: '#EAB308',         // Alertas, atenção
-      warningMuted: '#EAB3081A',  // Background de warning
-      error: '#EF4444',           // Erros, trends negativos
-      errorMuted: '#EF44441A',    // Background de erro
-      info: '#3B82F6',            // Informações, dicas
-      infoMuted: '#3B82F61A',     // Background de info
+      success: '#22C55E',         // Verde
+      successMuted: '#22C55E15',
+      warning: '#F59E0B',         // Amarelo/laranja
+      warningMuted: '#F59E0B15',
+      error: '#EF4444',           // Vermelho
+      errorMuted: '#EF444415',
+      info: '#3B82F6',            // Azul
+      infoMuted: '#3B82F615',
     },
 
-    // Borders
+    // Borders - Sutis com tom verde
     border: {
-      primary: '#27272A',     // Borders de cards, divisores
-      secondary: '#3F3F46',   // Borders de inputs, focus states
-      accent: '#F59E0B',      // Focus com accent, selecionados
+      primary: '#1F2A25',
+      secondary: '#2D3B34',
+      accent: '#22C55E',
     },
   },
 
@@ -73,12 +73,12 @@ export const colors = {
       disabled: '#D4D4D8',    // Estados desabilitados
     },
 
-    // Cor de Destaque (Amber/Dourado) - mesma do dark
+    // Cor de Destaque (Verde Menta) - mesma do dark
     accent: {
-      primary: '#F59E0B',
-      light: '#FBBF24',
-      dark: '#D97706',
-      muted: '#F59E0B1A',
+      primary: '#22C55E',     // Verde (mais escuro para light mode)
+      light: '#4ADE80',
+      dark: '#16A34A',
+      muted: '#22C55E12',
     },
 
     // Estados Semânticos - mesmos do dark
@@ -97,7 +97,7 @@ export const colors = {
     border: {
       primary: '#E4E4E7',
       secondary: '#D4D4D8',
-      accent: '#F59E0B',
+      accent: '#22C55E',
     },
   },
 
@@ -105,10 +105,10 @@ export const colors = {
   // CORES PARA GRÁFICOS
   // ============================================
   chart: {
-    primary: '#F59E0B',           // Série principal
-    secondary: '#F59E0B99',       // Série secundária (60% opacity)
-    comparison: '#71717A',        // Série de comparação
-    grid: '#27272A',              // Linhas de grid
+    primary: '#22C55E',           // Série principal - verde
+    secondary: '#22C55E66',       // Série secundária (40% opacity)
+    comparison: '#6B7280',        // Série de comparação
+    grid: '#1F2A25',              // Linhas de grid
     positive: '#22C55E',          // Trends positivos
     negative: '#EF4444',          // Trends negativos
   },
@@ -117,11 +117,11 @@ export const colors = {
   // CORES PARA TIPOS DE ATIVIDADE
   // ============================================
   activity: {
-    running: '#F59E0B',           // Corrida - amber
-    strength: '#22C55E',          // Força - verde
-    cycling: '#3B82F6',           // Ciclismo - azul
+    running: '#22C55E',           // Corrida - verde (principal)
+    strength: '#3B82F6',          // Força - azul
+    cycling: '#EC4899',           // Ciclismo - rosa
     swimming: '#06B6D4',          // Natação - cyan
-    other: '#A1A1AA',             // Outros - cinza
+    other: '#6B7280',             // Outros - cinza
   },
 } as const;
 

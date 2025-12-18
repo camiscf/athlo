@@ -11,16 +11,21 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useColors } from '../../context/ThemeContext';
 import { AuthStackScreenProps } from '../../navigation/types';
 
 export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>) {
   const { register } = useAuth();
+  const theme = useColors();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   async function handleRegister() {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -51,41 +56,66 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background.primary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              disabled={isLoading}
-            >
-              <Text style={styles.backButtonText}>← Voltar</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>Criar Conta</Text>
-            <Text style={styles.subtitle}>Comece a rastrear seus treinos</Text>
-          </View>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            disabled={isLoading}
+          >
+            <Feather name="arrow-left" size={24} color={theme.text.primary} />
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.form}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <View style={[styles.logoIcon, { backgroundColor: theme.accent.primary }]}>
+            <Feather name="zap" size={24} color="#000000" />
+          </View>
+          <Text style={[styles.logoText, { color: theme.text.primary }]}>Athlo</Text>
+        </View>
+
+        {/* Welcome Text */}
+        <View style={styles.welcomeContainer}>
+          <Text style={[styles.welcomeTitle, { color: theme.text.primary }]}>
+            Criar conta
+          </Text>
+          <Text style={[styles.welcomeSubtitle, { color: theme.text.secondary }]}>
+            Comece sua jornada fitness hoje
+          </Text>
+        </View>
+
+        {/* Form */}
+        <View style={styles.form}>
+          {/* Name Input */}
+          <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
+            <Feather name="user" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="Nome"
-              placeholderTextColor="#8E8E93"
+              style={[styles.input, { color: theme.text.primary }]}
+              placeholder="Nome completo"
+              placeholderTextColor={theme.text.tertiary}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
               autoComplete="name"
               editable={!isLoading}
             />
+          </View>
+
+          {/* Email Input */}
+          <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
+            <Feather name="mail" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text.primary }]}
               placeholder="E-mail"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={theme.text.tertiary}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -93,47 +123,76 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
               autoComplete="email"
               editable={!isLoading}
             />
+          </View>
+
+          {/* Password Input */}
+          <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
+            <Feather name="lock" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text.primary }]}
               placeholder="Senha"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={theme.text.tertiary}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoComplete="new-password"
               editable={!isLoading}
             />
-            <Text style={styles.passwordHint}>Mínimo de 8 caracteres</Text>
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color={theme.text.tertiary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.passwordHint, { color: theme.text.tertiary }]}>
+            Mínimo de 8 caracteres
+          </Text>
+
+          {/* Confirm Password Input */}
+          <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
+            <Feather name="lock" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="Confirmar Senha"
-              placeholderTextColor="#8E8E93"
+              style={[styles.input, { color: theme.text.primary }]}
+              placeholder="Confirmar senha"
+              placeholderTextColor={theme.text.tertiary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
               autoComplete="new-password"
               editable={!isLoading}
             />
-
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Criar Conta</Text>
-              )}
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+              <Feather name={showConfirmPassword ? 'eye' : 'eye-off'} size={20} color={theme.text.tertiary} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Já tem uma conta?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
-              <Text style={styles.linkText}>Entrar</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Register Button */}
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: theme.accent.primary },
+              isLoading && { opacity: 0.7 }
+            ]}
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#000000" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Text style={styles.buttonText}>Criar conta</Text>
+                <Feather name="arrow-right" size={20} color="#000000" />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.text.secondary }]}>
+            Já tem uma conta?
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
+            <Text style={[styles.linkText, { color: theme.accent.primary }]}> Entrar</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -143,85 +202,106 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingBottom: 40,
   },
   header: {
-    marginBottom: 32,
+    paddingTop: 16,
+    marginBottom: 16,
   },
   backButton: {
-    marginBottom: 24,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
   },
-  backButtonText: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '500',
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
   },
-  title: {
+  logoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  logoText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
-    marginBottom: 4,
   },
-  subtitle: {
+  welcomeContainer: {
+    marginBottom: 32,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  welcomeSubtitle: {
     fontSize: 16,
-    color: '#8E8E93',
   },
   form: {
-    marginBottom: 24,
+    marginBottom: 32,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    height: 56,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flex: 1,
     fontSize: 16,
-    color: '#000000',
-    marginBottom: 12,
+    height: '100%',
+  },
+  eyeIcon: {
+    padding: 4,
   },
   passwordHint: {
     fontSize: 12,
-    color: '#8E8E93',
-    marginTop: -8,
-    marginBottom: 12,
+    marginTop: -12,
+    marginBottom: 16,
     marginLeft: 4,
   },
   button: {
-    backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#B0B0B0',
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   buttonText: {
-    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
+    color: '#000000',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
   },
   footerText: {
     fontSize: 15,
-    color: '#8E8E93',
   },
   linkText: {
     fontSize: 15,
-    color: '#007AFF',
     fontWeight: '600',
   },
 });

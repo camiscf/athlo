@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
+import { useColors } from '../../context/ThemeContext';
 import { ChartDataPoint } from '../../types';
 
 interface SimpleBarChartProps {
@@ -14,18 +15,20 @@ interface SimpleBarChartProps {
 export default function SimpleBarChart({
   data,
   title,
-  color = '#007AFF',
+  color,
   height = 180,
   unit,
 }: SimpleBarChartProps) {
+  const theme = useColors();
+  const chartColor = color || theme.accent.primary;
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - 80;
 
   if (data.length === 0) {
     return (
-      <View style={[styles.container, styles.emptyContainer]}>
-        {title && <Text style={styles.title}>{title}</Text>}
-        <Text style={styles.emptyText}>Sem dados para exibir</Text>
+      <View style={[styles.container, styles.emptyContainer, { backgroundColor: theme.background.secondary }]}>
+        {title && <Text style={[styles.title, { color: theme.text.primary }]}>{title}</Text>}
+        <Text style={[styles.emptyText, { color: theme.text.secondary }]}>Sem dados para exibir</Text>
       </View>
     );
   }
@@ -34,9 +37,9 @@ export default function SimpleBarChart({
   const chartData = data.map((point) => ({
     value: point.value,
     label: point.label || '',
-    frontColor: color,
+    frontColor: chartColor,
     topLabelComponent: () => (
-      <Text style={styles.barLabel}>{point.value.toFixed(1)}</Text>
+      <Text style={[styles.barLabel, { color: theme.text.secondary }]}>{point.value.toFixed(1)}</Text>
     ),
   }));
 
@@ -45,11 +48,11 @@ export default function SimpleBarChart({
   const spacing = Math.max(8, (chartWidth - barWidth * data.length) / (data.length + 1));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       {title && (
         <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          {unit && <Text style={styles.unit}>{unit}</Text>}
+          <Text style={[styles.title, { color: theme.text.primary }]}>{title}</Text>
+          {unit && <Text style={[styles.unit, { color: theme.text.secondary }]}>{unit}</Text>}
         </View>
       )}
       <View style={styles.chartContainer}>
@@ -63,11 +66,11 @@ export default function SimpleBarChart({
           noOfSections={4}
           yAxisThickness={0}
           xAxisThickness={1}
-          xAxisColor="#E5E5EA"
+          xAxisColor={theme.border.primary}
           rulesType="dashed"
-          rulesColor="#E5E5EA"
-          yAxisTextStyle={styles.axisLabel}
-          xAxisLabelTextStyle={styles.axisLabel}
+          rulesColor={theme.border.primary}
+          yAxisTextStyle={[styles.axisLabel, { color: theme.text.secondary }]}
+          xAxisLabelTextStyle={[styles.axisLabel, { color: theme.text.secondary }]}
           maxValue={Math.max(...data.map(d => d.value)) * 1.2}
           initialSpacing={15}
           disablePress
@@ -79,7 +82,6 @@ export default function SimpleBarChart({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -98,27 +100,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
   },
   unit: {
     fontSize: 12,
-    color: '#8E8E93',
   },
   chartContainer: {
     alignItems: 'center',
   },
   axisLabel: {
     fontSize: 10,
-    color: '#8E8E93',
   },
   barLabel: {
     fontSize: 10,
-    color: '#8E8E93',
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 14,
-    color: '#8E8E93',
     marginTop: 8,
   },
 });

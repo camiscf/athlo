@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
+import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import {
   StrengthActivity,
@@ -32,6 +34,7 @@ import {
 } from '../../utils/statsCalculations';
 
 export default function StrengthStatsScreen() {
+  const theme = useColors();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [period, setPeriod] = useState<PeriodType>('month');
@@ -101,19 +104,24 @@ export default function StrengthStatsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background.primary }]}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.accent.primary]}
+            tintColor={theme.accent.primary}
+          />
         }
       >
         {/* Period Selector */}
@@ -126,14 +134,14 @@ export default function StrengthStatsScreen() {
           <StatCard
             title="Treinos"
             value={stats.totalWorkouts}
-            icon="💪"
-            color="#FF9500"
+            icon="strength"
+            color={theme.semantic.warning}
           />
           <StatCard
             title="Séries"
             value={stats.totalSets}
-            icon="🔢"
-            color="#007AFF"
+            icon="sets"
+            color={theme.accent.primary}
           />
         </View>
 
@@ -141,15 +149,15 @@ export default function StrengthStatsScreen() {
           <StatCard
             title="Exercícios"
             value={stats.totalExercises}
-            icon="📋"
-            color="#34C759"
+            icon="chart"
+            color={theme.semantic.success}
           />
           <StatCard
             title="Tempo médio"
             value={Math.round(stats.averageWorkoutDuration / 60)}
             unit="min"
-            icon="⏱️"
-            color="#5856D6"
+            icon="time"
+            color={theme.semantic.info}
           />
         </View>
 
@@ -157,19 +165,19 @@ export default function StrengthStatsScreen() {
         <SimpleBarChart
           data={muscleGroupData}
           title="Grupos Musculares Trabalhados"
-          color="#FF9500"
+          color={theme.semantic.warning}
         />
 
         {/* Volume Over Time */}
         <SimpleLineChart
           data={volumeChartData}
           title="Séries por Treino"
-          color="#007AFF"
+          color={theme.accent.primary}
         />
 
         {/* Exercise Progression */}
-        <View style={styles.exerciseCard}>
-          <Text style={styles.exerciseTitle}>Progressão por Exercício</Text>
+        <View style={[styles.exerciseCard, { backgroundColor: theme.background.secondary }]}>
+          <Text style={[styles.exerciseTitle, { color: theme.text.primary }]}>Progressão por Exercício</Text>
 
           {exerciseList.length > 0 ? (
             <>
@@ -184,14 +192,16 @@ export default function StrengthStatsScreen() {
                     key={exercise}
                     style={[
                       styles.exerciseButton,
-                      selectedExercise === exercise && styles.exerciseButtonSelected,
+                      { backgroundColor: theme.background.tertiary },
+                      selectedExercise === exercise && { backgroundColor: theme.accent.primary },
                     ]}
                     onPress={() => loadExerciseHistory(exercise)}
                   >
                     <Text
                       style={[
                         styles.exerciseButtonText,
-                        selectedExercise === exercise && styles.exerciseButtonTextSelected,
+                        { color: theme.text.primary },
+                        selectedExercise === exercise && { color: '#000000' },
                       ]}
                       numberOfLines={1}
                     >
@@ -203,7 +213,7 @@ export default function StrengthStatsScreen() {
 
               {loadingHistory && (
                 <View style={styles.historyLoading}>
-                  <ActivityIndicator size="small" color="#007AFF" />
+                  <ActivityIndicator size="small" color={theme.accent.primary} />
                 </View>
               )}
 
@@ -213,10 +223,10 @@ export default function StrengthStatsScreen() {
                     <SimpleLineChart
                       data={exerciseChartData}
                       title={`${selectedExercise} - Peso (kg)`}
-                      color="#34C759"
+                      color={theme.semantic.success}
                     />
                   ) : (
-                    <Text style={styles.noHistoryText}>
+                    <Text style={[styles.noHistoryText, { color: theme.text.secondary }]}>
                       Sem histórico de peso para este exercício
                     </Text>
                   )}
@@ -224,13 +234,13 @@ export default function StrengthStatsScreen() {
               )}
 
               {!selectedExercise && (
-                <Text style={styles.selectExerciseText}>
+                <Text style={[styles.selectExerciseText, { color: theme.text.secondary }]}>
                   Selecione um exercício para ver a progressão
                 </Text>
               )}
             </>
           ) : (
-            <Text style={styles.noExercisesText}>
+            <Text style={[styles.noExercisesText, { color: theme.text.secondary }]}>
               Nenhum exercício registrado neste período
             </Text>
           )}
@@ -238,20 +248,20 @@ export default function StrengthStatsScreen() {
 
         {/* Most Worked */}
         {stats.mostWorkedMuscleGroup && (
-          <View style={styles.highlightCard}>
-            <Text style={styles.highlightLabel}>Grupo mais treinado</Text>
-            <Text style={styles.highlightValue}>{stats.mostWorkedMuscleGroup}</Text>
+          <View style={[styles.highlightCard, { backgroundColor: theme.background.secondary }]}>
+            <Text style={[styles.highlightLabel, { color: theme.text.secondary }]}>Grupo mais treinado</Text>
+            <Text style={[styles.highlightValue, { color: theme.accent.primary }]}>{stats.mostWorkedMuscleGroup}</Text>
           </View>
         )}
 
         {/* Empty State */}
         {stats.totalWorkouts === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>💪</Text>
-            <Text style={styles.emptyText}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.background.secondary }]}>
+            <Feather name="target" size={48} color={theme.text.tertiary} style={styles.emptyIcon} />
+            <Text style={[styles.emptyText, { color: theme.text.primary }]}>
               Nenhum treino registrado neste período
             </Text>
-            <Text style={styles.emptySubtext}>
+            <Text style={[styles.emptySubtext, { color: theme.text.secondary }]}>
               Registre seus treinos para ver estatísticas detalhadas
             </Text>
           </View>
@@ -264,13 +274,11 @@ export default function StrengthStatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   scrollView: {
     flex: 1,
@@ -288,7 +296,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   exerciseCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -296,7 +303,6 @@ const styles = StyleSheet.create({
   exerciseTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 12,
   },
   exerciseSelector: {
@@ -309,19 +315,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F2F2F7',
     marginRight: 8,
-  },
-  exerciseButtonSelected: {
-    backgroundColor: '#007AFF',
   },
   exerciseButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#000000',
-  },
-  exerciseButtonTextSelected: {
-    color: '#FFFFFF',
   },
   historyLoading: {
     padding: 32,
@@ -332,24 +330,20 @@ const styles = StyleSheet.create({
   },
   selectExerciseText: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
     paddingVertical: 24,
   },
   noExercisesText: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
     paddingVertical: 16,
   },
   noHistoryText: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
     paddingVertical: 24,
   },
   highlightCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -357,34 +351,28 @@ const styles = StyleSheet.create({
   },
   highlightLabel: {
     fontSize: 12,
-    color: '#8E8E93',
     marginBottom: 4,
   },
   highlightValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FF9500',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
   },
 });
