@@ -1,8 +1,10 @@
 import React from 'react';
-import { Text, Platform } from 'react-native';
+import { Text, Platform, TouchableOpacity, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { MainTabParamList } from './types';
+import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/main/HomeScreen';
 import ActivitiesScreen from '../screens/main/ActivitiesScreen';
 import AddActivityScreen from '../screens/main/AddActivityScreen';
@@ -13,9 +15,34 @@ import EditDivisionScreen from '../screens/main/EditDivisionScreen';
 import RecordStrengthWorkoutScreen from '../screens/main/RecordStrengthWorkoutScreen';
 import StrengthActivityDetailScreen from '../screens/main/StrengthActivityDetailScreen';
 import EditStrengthWorkoutScreen from '../screens/main/EditStrengthWorkoutScreen';
+import BodyScreen from '../screens/main/BodyScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+function ProfileHeaderButton() {
+  const navigation = useNavigation<any>();
+  const { user } = useAuth();
+
+  return (
+    <TouchableOpacity
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+      }}
+      onPress={() => navigation.navigate('Profile')}
+    >
+      <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF' }}>
+        {user?.name?.charAt(0).toUpperCase() || '?'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 function TabNavigator() {
   return (
@@ -48,6 +75,7 @@ function TabNavigator() {
         headerTitleStyle: {
           fontWeight: '600',
         },
+        headerRight: () => <ProfileHeaderButton />,
       }}
     >
       <Tab.Screen
@@ -83,11 +111,11 @@ function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="Body"
+        component={BodyScreen}
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color }) => <TabIcon name="user" color={color} />,
+          title: 'Corpo',
+          tabBarIcon: ({ color }) => <TabIcon name="body" color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -160,6 +188,14 @@ export default function MainNavigator() {
           headerBackTitle: 'Voltar',
         }}
       />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'Perfil',
+          headerBackTitle: 'Voltar',
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -170,6 +206,7 @@ function TabIcon({ name, color }: { name: string; color: string }) {
     list: '📋',
     run: '🏃',
     strength: '💪',
+    body: '⚖️',
     user: '👤',
   };
 

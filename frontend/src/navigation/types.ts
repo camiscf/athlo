@@ -13,6 +13,8 @@ export type MainTabParamList = {
   Home: undefined;
   Activities: undefined;
   AddActivity: { activityId?: string } | undefined;
+  Divisions: undefined;
+  Body: undefined;
   Profile: undefined;
   ActivityDetail: { activityId: string };
 };

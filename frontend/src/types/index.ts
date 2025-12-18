@@ -203,3 +203,68 @@ export interface ExerciseHistory {
     rpe: number | null;
   }[];
 }
+
+// ==================== BODY MEASUREMENTS TYPES ====================
+
+export interface BodyMeasurement {
+  id: string;
+  user_id: string;
+  date: string;
+  weight: number | null;
+  body_fat_percentage: number | null;
+  chest: number | null;
+  waist: number | null;
+  hips: number | null;
+  left_arm: number | null;
+  right_arm: number | null;
+  left_thigh: number | null;
+  right_thigh: number | null;
+  left_calf: number | null;
+  right_calf: number | null;
+  neck: number | null;
+  shoulders: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BodyMeasurementCreate {
+  date?: string;
+  weight?: number;
+  body_fat_percentage?: number;
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  left_arm?: number;
+  right_arm?: number;
+  left_thigh?: number;
+  right_thigh?: number;
+  left_calf?: number;
+  right_calf?: number;
+  neck?: number;
+  shoulders?: number;
+  notes?: string;
+}
+
+export interface BodyMeasurementUpdate {
+  date?: string;
+  weight?: number;
+  body_fat_percentage?: number;
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  left_arm?: number;
+  right_arm?: number;
+  left_thigh?: number;
+  right_thigh?: number;
+  left_calf?: number;
+  right_calf?: number;
+  neck?: number;
+  shoulders?: number;
+  notes?: string;
+}
+
+export interface WeightRecord {
+  date: string;
+  weight: number;
+}

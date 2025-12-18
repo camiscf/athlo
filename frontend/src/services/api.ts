@@ -16,6 +16,10 @@ import {
   StrengthActivityCreate,
   StrengthActivityUpdate,
   ExerciseHistory,
+  BodyMeasurement,
+  BodyMeasurementCreate,
+  BodyMeasurementUpdate,
+  WeightRecord,
 } from '../types';
 
 import { Platform } from 'react-native';
@@ -249,6 +253,44 @@ class ApiService {
   async getExerciseHistory(exerciseName: string, limit?: number): Promise<ExerciseHistory> {
     const params = limit ? { limit } : undefined;
     const response = await this.client.get<ExerciseHistory>(`/strength/history/${encodeURIComponent(exerciseName)}`, { params });
+    return response.data;
+  }
+
+  // ==================== BODY MEASUREMENTS ====================
+
+  async getBodyMeasurements(limit?: number): Promise<BodyMeasurement[]> {
+    const params = limit ? { limit } : undefined;
+    const response = await this.client.get<BodyMeasurement[]>('/body/measurements', { params });
+    return response.data;
+  }
+
+  async getBodyMeasurement(id: string): Promise<BodyMeasurement> {
+    const response = await this.client.get<BodyMeasurement>(`/body/measurements/${id}`);
+    return response.data;
+  }
+
+  async createBodyMeasurement(data: BodyMeasurementCreate): Promise<BodyMeasurement> {
+    const response = await this.client.post<BodyMeasurement>('/body/measurements', data);
+    return response.data;
+  }
+
+  async updateBodyMeasurement(id: string, data: BodyMeasurementUpdate): Promise<BodyMeasurement> {
+    const response = await this.client.put<BodyMeasurement>(`/body/measurements/${id}`, data);
+    return response.data;
+  }
+
+  async deleteBodyMeasurement(id: string): Promise<void> {
+    await this.client.delete(`/body/measurements/${id}`);
+  }
+
+  async getLatestBodyMeasurement(): Promise<BodyMeasurement | null> {
+    const response = await this.client.get<BodyMeasurement | null>('/body/latest');
+    return response.data;
+  }
+
+  async getWeightHistory(limit?: number): Promise<WeightRecord[]> {
+    const params = limit ? { limit } : undefined;
+    const response = await this.client.get<WeightRecord[]>('/body/weight-history', { params });
     return response.data;
   }
 }
