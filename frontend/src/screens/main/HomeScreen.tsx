@@ -151,7 +151,12 @@ export default function HomeScreen() {
 
         {/* Cards de estatísticas totais */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Total geral</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Total geral</Text>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Stats')}>
+              <Text style={styles.seeAll}>Ver estatísticas</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.statsGrid}>
             <View style={styles.statCardSmall}>
               <Text style={styles.statIcon}>🏃</Text>
@@ -176,6 +181,19 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Botão Ver Estatísticas */}
+        <TouchableOpacity
+          style={styles.statsButton}
+          onPress={() => (navigation as any).navigate('Stats')}
+        >
+          <Text style={styles.statsButtonIcon}>📊</Text>
+          <View style={styles.statsButtonContent}>
+            <Text style={styles.statsButtonTitle}>Ver Estatísticas Completas</Text>
+            <Text style={styles.statsButtonSubtitle}>Gráficos e análise de desempenho</Text>
+          </View>
+          <Text style={styles.statsButtonArrow}>›</Text>
+        </TouchableOpacity>
 
         {/* Atividades recentes */}
         <View style={styles.section}>
@@ -436,5 +454,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
+  },
+  statsButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  statsButtonIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  statsButtonContent: {
+    flex: 1,
+  },
+  statsButtonTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  statsButtonSubtitle: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  statsButtonArrow: {
+    fontSize: 24,
+    color: '#C7C7CC',
+    fontWeight: '300',
   },
 });

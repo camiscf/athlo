@@ -268,3 +268,38 @@ export interface WeightRecord {
   date: string;
   weight: number;
 }
+
+// ==================== STATISTICS TYPES ====================
+
+export interface ChartDataPoint {
+  value: number;
+  label?: string;
+  date?: string;
+}
+
+export interface RunningStats {
+  totalDistance: number;
+  totalDuration: number;
+  totalActivities: number;
+  averagePace: number;
+  averageDistance: number;
+  longestRun: number;
+  fastestPace: number;
+}
+
+export interface StrengthStats {
+  totalWorkouts: number;
+  totalSets: number;
+  totalExercises: number;
+  mostWorkedMuscleGroup: string | null;
+  averageWorkoutDuration: number;
+}
+
+export interface BodyStats {
+  currentWeight: number | null;
+  weightChange30Days: number | null;
+  currentBodyFat: number | null;
+  bodyFatChange30Days: number | null;
+}
+
+export type PeriodType = 'week' | 'month' | 'year' | 'all';

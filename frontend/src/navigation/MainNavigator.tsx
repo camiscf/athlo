@@ -16,6 +16,9 @@ import RecordStrengthWorkoutScreen from '../screens/main/RecordStrengthWorkoutSc
 import StrengthActivityDetailScreen from '../screens/main/StrengthActivityDetailScreen';
 import EditStrengthWorkoutScreen from '../screens/main/EditStrengthWorkoutScreen';
 import BodyScreen from '../screens/main/BodyScreen';
+import StatsScreen from '../screens/main/StatsScreen';
+import RunningStatsScreen from '../screens/main/RunningStatsScreen';
+import StrengthStatsScreen from '../screens/main/StrengthStatsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -193,6 +196,30 @@ export default function MainNavigator() {
         component={ProfileScreen}
         options={{
           title: 'Perfil',
+          headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{
+          title: 'Estatísticas',
+          headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="RunningStats"
+        component={RunningStatsScreen}
+        options={{
+          title: 'Estatísticas de Corrida',
+          headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="StrengthStats"
+        component={StrengthStatsScreen}
+        options={{
+          title: 'Estatísticas de Força',
           headerBackTitle: 'Voltar',
         }}
       />
