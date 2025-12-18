@@ -98,7 +98,7 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
           <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Feather name="user" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={[styles.input, { color: theme.text.primary }]}
+              style={[styles.input, { color: theme.text.primary, backgroundColor: 'transparent' }]}
               placeholder="Nome completo"
               placeholderTextColor={theme.text.tertiary}
               value={name}
@@ -113,7 +113,7 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
           <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Feather name="mail" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={[styles.input, { color: theme.text.primary }]}
+              style={[styles.input, { color: theme.text.primary, backgroundColor: 'transparent' }]}
               placeholder="E-mail"
               placeholderTextColor={theme.text.tertiary}
               value={email}
@@ -129,7 +129,7 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
           <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Feather name="lock" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={[styles.input, { color: theme.text.primary }]}
+              style={[styles.input, { color: theme.text.primary, backgroundColor: 'transparent' }]}
               placeholder="Senha"
               placeholderTextColor={theme.text.tertiary}
               value={password}
@@ -150,7 +150,7 @@ export default function RegisterScreen({ navigation }: AuthStackScreenProps<'Reg
           <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Feather name="lock" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={[styles.input, { color: theme.text.primary }]}
+              style={[styles.input, { color: theme.text.primary, backgroundColor: 'transparent' }]}
               placeholder="Confirmar senha"
               placeholderTextColor={theme.text.tertiary}
               value={confirmPassword}

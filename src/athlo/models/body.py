@@ -29,6 +29,7 @@ class BodyMeasurement(BaseModel):
     right_calf: Optional[float] = Field(None, description="Right calf circumference in cm")
     neck: Optional[float] = Field(None, description="Neck circumference in cm")
     shoulders: Optional[float] = Field(None, description="Shoulders width in cm")
+    glutes: Optional[float] = Field(None, description="Glutes circumference in cm")
 
     # Notes
     notes: Optional[str] = None
@@ -54,6 +55,7 @@ class BodyMeasurementCreate(BaseModel):
     right_calf: Optional[float] = None
     neck: Optional[float] = None
     shoulders: Optional[float] = None
+    glutes: Optional[float] = None
     notes: Optional[str] = None
 
 
@@ -73,4 +75,5 @@ class BodyMeasurementUpdate(BaseModel):
     right_calf: Optional[float] = None
     neck: Optional[float] = None
     shoulders: Optional[float] = None
+    glutes: Optional[float] = None
     notes: Optional[str] = None

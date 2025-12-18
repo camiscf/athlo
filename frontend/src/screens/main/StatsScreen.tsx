@@ -172,7 +172,7 @@ export default function StatsScreen() {
     if (runningStats.longestRun > 0) {
       records.push({
         icon: 'award',
-        title: 'Maior Distancia',
+        title: 'Maior Distância',
         value: `${formatDistance(runningStats.longestRun)} km`,
         color: theme.accent.primary,
       });
@@ -297,7 +297,7 @@ export default function StatsScreen() {
         <View style={[styles.mainCard, { backgroundColor: theme.background.secondary }]}>
           <View style={styles.mainCardHeader}>
             <Text style={[styles.mainCardTitle, { color: theme.text.primary }]}>
-              Evolucao do Pace
+              Evolução do Pace
             </Text>
             {paceTrend.change !== 0 && (
               <View
@@ -366,14 +366,14 @@ export default function StatsScreen() {
           />
           <StatGridCard
             icon="map-pin"
-            label="Distancia"
+            label="Distância"
             value={formatDistance(runningStats.totalDistance)}
             unit="km"
             theme={theme}
           />
           <StatGridCard
             icon="heart"
-            label="FC Media"
+            label="FC Média"
             value={runningStats.averageHeartRate || '--'}
             unit="bpm"
             theme={theme}
@@ -390,9 +390,9 @@ export default function StatsScreen() {
         {/* Consistency Section */}
         <View style={[styles.consistencyCard, { backgroundColor: theme.background.secondary }]}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Consistencia</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Consistência</Text>
             <Text style={[styles.sectionSubtitle, { color: theme.text.secondary }]}>
-              Ultimos 28 dias
+              Últimos 28 dias
             </Text>
           </View>
 

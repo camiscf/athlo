@@ -9,6 +9,7 @@ from athlo.api.routes.auth import router as auth_router
 from athlo.api.routes.auth import user_router
 from athlo.api.routes.strength import router as strength_router
 from athlo.api.routes.body import router as body_router
+from athlo.api.routes.goals import router as goals_router
 from athlo.config import settings
 
 app = FastAPI(
@@ -32,6 +33,7 @@ app.include_router(user_router)
 app.include_router(activities_router)
 app.include_router(strength_router)
 app.include_router(body_router)
+app.include_router(goals_router)
 
 
 @app.get("/health")

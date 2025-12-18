@@ -21,6 +21,8 @@ import BodyScreen from '../screens/main/BodyScreen';
 import StatsScreen from '../screens/main/StatsScreen';
 import RunningStatsScreen from '../screens/main/RunningStatsScreen';
 import StrengthStatsScreen from '../screens/main/StrengthStatsScreen';
+import GoalsScreen from '../screens/main/GoalsScreen';
+import BodyHistoryScreen from '../screens/main/BodyHistoryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -231,6 +233,22 @@ export default function MainNavigator() {
         options={{
           title: 'Estatísticas de Força',
           headerBackTitle: 'Voltar',
+        }}
+      />
+      <Stack.Screen
+        name="Goals"
+        component={GoalsScreen}
+        options={{
+          title: 'Metas',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="BodyHistory"
+        component={BodyHistoryScreen}
+        options={{
+          title: 'Histórico',
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

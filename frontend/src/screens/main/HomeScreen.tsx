@@ -7,44 +7,15 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
-  useWindowDimensions,
-  ImageBackground,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useColors } from '../../context/ThemeContext';
 import { api } from '../../services/api';
-import { RunningActivity, StrengthActivity } from '../../types';
+import { RunningActivity, StrengthActivity, Goal } from '../../types';
 
 type Activity = (RunningActivity & { type: 'running' }) | (StrengthActivity & { type: 'strength' });
-
-interface QuickStartCardProps {
-  icon: string;
-  label: string;
-  color: string;
-  theme: any;
-  onPress: () => void;
-  selected?: boolean;
-}
-
-function QuickStartCard({ icon, label, color, theme, onPress, selected }: QuickStartCardProps) {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.quickStartCard,
-        { backgroundColor: theme.background.secondary },
-        selected && { borderColor: theme.accent.primary, borderWidth: 2 },
-      ]}
-      onPress={onPress}
-    >
-      <View style={[styles.quickStartIconContainer, { backgroundColor: color + '20' }]}>
-        <Feather name={icon as any} size={24} color={color} />
-      </View>
-      <Text style={[styles.quickStartLabel, { color: theme.text.primary }]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
 
 interface WeeklyStatCardProps {
   icon: string;
@@ -134,10 +105,10 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const theme = useColors();
-  const { width } = useWindowDimensions();
   const [runningActivities, setRunningActivities] = useState<RunningActivity[]>([]);
   const [strengthActivities, setStrengthActivities] = useState<StrengthActivity[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -147,13 +118,15 @@ export default function HomeScreen() {
     }
 
     try {
-      const [runningData, strengthData] = await Promise.all([
+      const [runningData, strengthData, goalsData] = await Promise.all([
         api.getRunningActivities(),
         api.getStrengthActivities(),
+        api.getGoals(true),
       ]);
 
       setRunningActivities(runningData);
       setStrengthActivities(strengthData);
+      setGoals(goalsData);
 
       const runningWithType = runningData.map(a => ({ ...a, type: 'running' as const }));
       const strengthWithType = strengthData.map(a => ({ ...a, type: 'strength' as const }));
@@ -278,41 +251,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Quick Start */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Iniciar Treino</Text>
-          <View style={styles.quickStartGrid}>
-            <QuickStartCard
-              icon="activity"
-              label="Corrida"
-              color={theme.accent.primary}
-              theme={theme}
-              onPress={() => (navigation as any).navigate('AddActivity', { activityType: 'running' })}
-            />
-            <QuickStartCard
-              icon="droplet"
-              label="Natacao"
-              color="#06B6D4"
-              theme={theme}
-              onPress={() => (navigation as any).navigate('AddActivity', { activityType: 'swimming' })}
-            />
-            <QuickStartCard
-              icon="disc"
-              label="Ciclismo"
-              color="#EC4899"
-              theme={theme}
-              onPress={() => (navigation as any).navigate('AddActivity', { activityType: 'cycling' })}
-            />
-            <QuickStartCard
-              icon="target"
-              label="Academia"
-              color="#3B82F6"
-              theme={theme}
-              onPress={() => (navigation as any).navigate('Divisions')}
-            />
-          </View>
-        </View>
-
         {/* Weekly Progress */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -335,8 +273,8 @@ export default function HomeScreen() {
             <WeeklyStatCard
               icon="map-pin"
               value={`${weekDistance.toFixed(1)}`}
-              label="Distancia (km)"
-              subtitle="corrida + ciclismo"
+              label="Distância (km)"
+              subtitle="corrida"
               theme={theme}
             />
           </View>
@@ -346,26 +284,57 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Minhas Metas</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Goals')}>
               <Text style={[styles.seeAll, { color: theme.accent.primary }]}>Editar</Text>
             </TouchableOpacity>
           </View>
-          <View style={[styles.goalsCard, { backgroundColor: theme.background.secondary }]}>
-            <GoalProgress
-              label="Distancia Semanal"
-              current={weekDistance}
-              target={30}
-              unit="km"
-              theme={theme}
-            />
-            <GoalProgress
-              label="Treinos Semanais"
-              current={weekActivitiesCount}
-              target={5}
-              unit=""
-              theme={theme}
-            />
-          </View>
+          {goals.length > 0 ? (
+            <View style={[styles.goalsCard, { backgroundColor: theme.background.secondary }]}>
+              {goals.slice(0, 3).map((goal) => (
+                <View key={goal.id} style={styles.goalItem}>
+                  <View style={styles.goalHeader}>
+                    <View style={styles.goalLabelRow}>
+                      <Feather
+                        name={goal.activity_type === 'running' ? 'zap' : 'target'}
+                        size={14}
+                        color={theme.accent.primary}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text style={[styles.goalLabel, { color: theme.text.primary }]}>
+                        {goal.display_text}
+                      </Text>
+                    </View>
+                    <Text style={[styles.goalValue, { color: theme.text.secondary }]}>
+                      {goal.progress.current}/{goal.progress.target}
+                    </Text>
+                  </View>
+                  <View style={[styles.goalBarBg, { backgroundColor: theme.background.tertiary }]}>
+                    <View
+                      style={[
+                        styles.goalBarFill,
+                        { backgroundColor: theme.accent.primary, width: `${Math.min(goal.progress.percentage, 100)}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.addGoalCard, { backgroundColor: theme.background.secondary }]}
+              onPress={() => (navigation as any).navigate('Goals')}
+            >
+              <Feather name="target" size={24} color={theme.text.tertiary} />
+              <Text style={[styles.addGoalText, { color: theme.text.secondary }]}>
+                Defina metas para acompanhar seu progresso
+              </Text>
+              <View style={[styles.addGoalButton, { backgroundColor: theme.accent.muted }]}>
+                <Text style={[styles.addGoalButtonText, { color: theme.accent.primary }]}>
+                  + Criar Meta
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Recent Activity */}
@@ -444,7 +413,7 @@ export default function HomeScreen() {
                         ? ` • ${activity.distance.toFixed(1)} km`
                         : ''}
                       {activity.type === 'strength'
-                        ? ` • ${activity.exercises.length} exercicios`
+                        ? ` • ${activity.exercises.length} exercícios`
                         : ''}
                     </Text>
                   </View>
@@ -514,30 +483,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  quickStartGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 16,
-  },
-  quickStartCard: {
-    width: '47%',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-  },
-  quickStartIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  quickStartLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
   weeklyStatsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -575,12 +520,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  goalLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   goalLabel: {
     fontSize: 14,
     fontWeight: '500',
   },
   goalValue: {
     fontSize: 13,
+  },
+  addGoalCard: {
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  addGoalText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  addGoalButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  addGoalButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   goalBarBg: {
     height: 8,

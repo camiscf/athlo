@@ -117,7 +117,7 @@ export default function LoginScreen({ navigation }: AuthStackScreenProps<'Login'
           <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Feather name="mail" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={[styles.input, { color: theme.text.primary }]}
+              style={[styles.input, { color: theme.text.primary, backgroundColor: 'transparent' }]}
               placeholder="E-mail ou Usuário"
               placeholderTextColor={theme.text.tertiary}
               value={email}
@@ -133,7 +133,7 @@ export default function LoginScreen({ navigation }: AuthStackScreenProps<'Login'
           <View style={[styles.inputContainer, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Feather name="lock" size={20} color={theme.text.tertiary} style={styles.inputIcon} />
             <TextInput
-              style={[styles.input, { color: theme.text.primary }]}
+              style={[styles.input, { color: theme.text.primary, backgroundColor: 'transparent' }]}
               placeholder="Senha"
               placeholderTextColor={theme.text.tertiary}
               value={password}

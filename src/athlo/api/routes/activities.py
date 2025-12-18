@@ -7,11 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from athlo.api.deps import get_current_user
 from athlo.api.schemas import (
+    LapResponse,
     RunningActivityCreate,
     RunningActivityResponse,
     RunningActivityUpdate,
 )
-from athlo.models.activity import RunningActivity
+from athlo.models.activity import Lap, RunningActivity
 from athlo.models.user import User
 from athlo.repositories.json_repository import JsonRepository
 
@@ -19,6 +20,18 @@ router = APIRouter(prefix="/activities/running", tags=["Running Activities"])
 
 # Repository for running activities
 activity_repo = JsonRepository[RunningActivity]("running_activities.json", RunningActivity)
+
+
+def lap_to_response(lap: Lap) -> LapResponse:
+    """Convert lap model to response schema."""
+    return LapResponse(
+        number=lap.number,
+        distance=lap.distance,
+        duration_seconds=lap.duration_seconds,
+        pace_seconds=lap.pace_seconds,
+        time=lap.time_formatted,
+        pace=lap.pace_formatted,
+    )
 
 
 def activity_to_response(activity: RunningActivity) -> RunningActivityResponse:
@@ -34,6 +47,7 @@ def activity_to_response(activity: RunningActivity) -> RunningActivityResponse:
         pace_formatted=activity.pace_formatted,
         duration_formatted=activity.duration_formatted,
         speed_kmh=activity.speed_kmh,
+        laps=[lap_to_response(lap) for lap in activity.laps],
         cadence=activity.cadence,
         calories=activity.calories,
         effort=activity.effort,
@@ -56,25 +70,46 @@ async def create_running_activity(
     """
     Create a new running activity.
 
-    Provide at least 2 of: distance, duration, pace.
+    Provide at least 2 of: distance, duration, pace - OR provide laps.
     The third will be calculated automatically.
     """
-    # Validate that at least 2 metrics are provided
-    metrics = [request.distance, request.duration, request.pace]
+    # Convert lap schemas to lap models (filter out invalid laps with 0 values)
+    laps = [
+        Lap(
+            number=i + 1,  # Renumber to ensure sequential
+            distance=lap.distance,
+            duration_seconds=lap.duration_seconds,
+            pace_seconds=lap.pace_seconds,
+        )
+        for i, lap in enumerate(request.laps)
+        if lap.distance > 0 and lap.duration_seconds > 0
+    ]
+
+    # Calculate totals from laps if provided
+    distance = request.distance
+    duration = request.duration
+
+    if laps and distance is None and duration is None:
+        distance = sum(lap.distance for lap in laps)
+        duration = sum(lap.duration_seconds for lap in laps)
+
+    # Validate that at least 2 metrics are provided (or laps)
+    metrics = [distance, duration, request.pace]
     provided = sum(m is not None for m in metrics)
-    if provided < 2:
+    if provided < 2 and not laps:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide at least 2 of: distance, duration, pace",
+            detail="Provide at least 2 of: distance, duration, pace - or provide laps",
         )
 
     activity = RunningActivity(
         user_id=current_user.id,
         title=request.title,
         start_time=request.start_time,
-        distance=request.distance,
-        duration=request.duration,
+        distance=distance,
+        duration=duration,
         pace=request.pace,
+        laps=laps,
         cadence=request.cadence,
         calories=request.calories,
         effort=request.effort,
@@ -185,6 +220,20 @@ async def update_running_activity(
             detail="Not authorized to update this activity",
         )
 
+    # Convert lap schemas to lap models if provided (filter out invalid laps)
+    laps = activity.laps
+    if request.laps is not None:
+        laps = [
+            Lap(
+                number=i + 1,
+                distance=lap.distance,
+                duration_seconds=lap.duration_seconds,
+                pace_seconds=lap.pace_seconds,
+            )
+            for i, lap in enumerate(request.laps)
+            if lap.distance > 0 and lap.duration_seconds > 0
+        ]
+
     # Build updated data
     update_data = {
         "id": activity.id,
@@ -195,6 +244,7 @@ async def update_running_activity(
         "distance": request.distance if request.distance is not None else activity.distance,
         "duration": request.duration if request.duration is not None else activity.duration,
         "pace": request.pace if request.pace is not None else activity.pace,
+        "laps": laps,
         "cadence": request.cadence if request.cadence is not None else activity.cadence,
         "calories": request.calories if request.calories is not None else activity.calories,
         "effort": request.effort if request.effort is not None else activity.effort,

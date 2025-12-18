@@ -173,9 +173,9 @@ export default function BodyScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Medicoes Corporais</Text>
-          <TouchableOpacity>
-            <Text style={[styles.historyLink, { color: theme.accent.primary }]}>Historico</Text>
+          <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Medições Corporais</Text>
+          <TouchableOpacity onPress={() => (navigation as any).navigate('BodyHistory')}>
+            <Text style={[styles.historyLink, { color: theme.accent.primary }]}>Histórico</Text>
           </TouchableOpacity>
         </View>
 
@@ -290,9 +290,6 @@ export default function BodyScreen() {
         <View style={styles.measurementsSection}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Medidas (cm)</Text>
-            <TouchableOpacity>
-              <Text style={[styles.editLink, { color: theme.accent.primary }]}>Editar lista</Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.measurementsGrid}>
@@ -311,9 +308,30 @@ export default function BodyScreen() {
               theme={theme}
             />
             <MeasurementCard
+              icon="maximize"
+              label="Quadril"
+              value={latestMeasurement?.hips?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="heart"
+              label="Glúteo"
+              value={latestMeasurement?.glutes?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
               icon="circle"
-              label="Biceps Dir."
+              label="Bíceps Dir."
               value={latestMeasurement?.right_arm?.toFixed(1) || '--'}
+              unit="cm"
+              theme={theme}
+            />
+            <MeasurementCard
+              icon="circle"
+              label="Bíceps Esq."
+              value={latestMeasurement?.left_arm?.toFixed(1) || '--'}
               unit="cm"
               theme={theme}
             />
@@ -321,13 +339,6 @@ export default function BodyScreen() {
               icon="move"
               label="Coxa Dir."
               value={latestMeasurement?.right_thigh?.toFixed(1) || '--'}
-              unit="cm"
-              theme={theme}
-            />
-            <MeasurementCard
-              icon="circle"
-              label="Biceps Esq."
-              value={latestMeasurement?.left_arm?.toFixed(1) || '--'}
               unit="cm"
               theme={theme}
             />
@@ -450,7 +461,7 @@ export default function BodyScreen() {
               </View>
               <View style={styles.formRow}>
                 <View style={styles.formField}>
-                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Biceps Esq.</Text>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Bíceps Esq.</Text>
                   <TextInput
                     style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
@@ -461,7 +472,7 @@ export default function BodyScreen() {
                   />
                 </View>
                 <View style={styles.formField}>
-                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Biceps Dir.</Text>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Bíceps Dir.</Text>
                   <TextInput
                     style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
                     keyboardType="decimal-pad"
@@ -498,6 +509,20 @@ export default function BodyScreen() {
                     onChangeText={(v) => updateFormField('hips', v)}
                   />
                 </View>
+              </View>
+              <View style={styles.formRow}>
+                <View style={styles.formField}>
+                  <Text style={[styles.formLabel, { color: theme.text.tertiary }]}>Glúteo (cm)</Text>
+                  <TextInput
+                    style={[styles.formInput, { backgroundColor: theme.background.secondary, color: theme.text.primary }]}
+                    keyboardType="decimal-pad"
+                    placeholder="0.0"
+                    placeholderTextColor={theme.text.tertiary}
+                    value={formData.glutes?.toString() || ''}
+                    onChangeText={(v) => updateFormField('glutes', v)}
+                  />
+                </View>
+                <View style={styles.formField} />
               </View>
 
               {/* Lower Body */}

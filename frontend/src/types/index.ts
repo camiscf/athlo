@@ -26,6 +26,29 @@ export interface RegisterRequest {
 }
 
 // Activity types
+export interface Lap {
+  number: number;
+  time: string; // formatted time "1:23"
+  duration_seconds: number;
+  distance: number; // km
+  pace: string; // formatted pace "5:30"
+  pace_seconds: number; // seconds per km
+}
+
+export interface LapCreate {
+  number: number;
+  distance: number; // km
+  duration_seconds: number;
+  pace_seconds: number;
+}
+
+export interface AutoSplit {
+  km: number;
+  pace: string; // formatted pace "5:30"
+  pace_seconds: number;
+  change: number | null; // difference from previous split in seconds (negative = faster)
+}
+
 export interface RunningActivity {
   id: string;
   user_id: string;
@@ -42,6 +65,8 @@ export interface RunningActivity {
   effort?: number | null; // RPE 1-10
   avg_heart_rate?: number | null;
   notes?: string | null;
+  laps?: Lap[];
+  auto_splits?: AutoSplit[];
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +77,7 @@ export interface RunningActivityCreate {
   distance?: number; // kilometers
   duration?: number; // seconds
   pace?: number; // seconds per km
+  laps?: LapCreate[];
   cadence?: number;
   calories?: number;
   effort?: number; // RPE 1-10
@@ -215,6 +241,7 @@ export interface BodyMeasurement {
   chest: number | null;
   waist: number | null;
   hips: number | null;
+  glutes: number | null;
   left_arm: number | null;
   right_arm: number | null;
   left_thigh: number | null;
@@ -235,6 +262,7 @@ export interface BodyMeasurementCreate {
   chest?: number;
   waist?: number;
   hips?: number;
+  glutes?: number;
   left_arm?: number;
   right_arm?: number;
   left_thigh?: number;
@@ -253,6 +281,7 @@ export interface BodyMeasurementUpdate {
   chest?: number;
   waist?: number;
   hips?: number;
+  glutes?: number;
   left_arm?: number;
   right_arm?: number;
   left_thigh?: number;
@@ -303,3 +332,42 @@ export interface BodyStats {
 }
 
 export type PeriodType = 'week' | 'month' | 'year' | 'all';
+
+// ==================== GOALS TYPES ====================
+
+export type ActivityType = 'running' | 'strength';
+export type GoalPeriod = 'weekly' | 'monthly';
+
+export interface GoalProgress {
+  current: number;
+  target: number;
+  percentage: number;
+}
+
+export interface Goal {
+  id: string;
+  user_id: string;
+  activity_type: ActivityType;
+  target_frequency: number;
+  period: GoalPeriod;
+  is_active: boolean;
+  notes: string | null;
+  display_text: string;
+  progress: GoalProgress;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalCreate {
+  activity_type: ActivityType;
+  target_frequency: number;
+  period?: GoalPeriod;
+  notes?: string;
+}
+
+export interface GoalUpdate {
+  target_frequency?: number;
+  period?: string;
+  is_active?: boolean;
+  notes?: string;
+}

@@ -3,9 +3,37 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import field_validator, model_validator
+from pydantic import BaseModel as PydanticBaseModel, field_validator, model_validator
 
 from athlo.models.base import BaseModel
+
+
+class Lap(PydanticBaseModel):
+    """A single lap in a running activity."""
+
+    number: int  # lap number (1, 2, 3...)
+    distance: float  # kilometers
+    duration_seconds: float  # seconds
+    pace_seconds: float  # seconds per km
+
+    @property
+    def time_formatted(self) -> str:
+        """Format lap time as M:SS or H:MM:SS."""
+        total = int(self.duration_seconds)
+        hours = total // 3600
+        minutes = (total % 3600) // 60
+        seconds = total % 60
+        if hours > 0:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        return f"{minutes}:{seconds:02d}"
+
+    @property
+    def pace_formatted(self) -> str:
+        """Format pace as M:SS/km."""
+        total = int(self.pace_seconds)
+        minutes = total // 60
+        seconds = total % 60
+        return f"{minutes}:{seconds:02d}"
 
 
 class RunningActivity(BaseModel):
@@ -19,6 +47,9 @@ class RunningActivity(BaseModel):
     distance: float | None = None  # kilometers
     duration: float | None = None  # seconds
     pace: float | None = None  # seconds per kilometer
+
+    # Laps
+    laps: list[Lap] = []
 
     # Additional metrics
     cadence: int | None = None  # steps per minute (rpm)

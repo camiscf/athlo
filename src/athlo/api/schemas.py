@@ -76,6 +76,28 @@ class ErrorResponse(BaseModel):
 
 
 # Running Activity schemas
+
+# Lap schemas
+class LapCreate(BaseModel):
+    """Create a lap for a running activity."""
+
+    number: int = Field(ge=1)  # lap number
+    distance: float = Field(ge=0)  # kilometers
+    duration_seconds: float = Field(ge=0)  # seconds
+    pace_seconds: float = Field(ge=0)  # seconds per km
+
+
+class LapResponse(BaseModel):
+    """Lap response with formatted fields."""
+
+    number: int
+    distance: float  # km
+    duration_seconds: float  # seconds
+    pace_seconds: float  # seconds per km
+    time: str  # formatted time "M:SS"
+    pace: str  # formatted pace "M:SS/km"
+
+
 class RunningActivityCreate(BaseModel):
     """Create a running activity. Provide at least 2 of: distance, duration, pace."""
 
@@ -86,6 +108,9 @@ class RunningActivityCreate(BaseModel):
     distance: float | None = None  # kilometers
     duration: float | None = None  # seconds
     pace: float | None = None  # seconds per kilometer
+
+    # Laps
+    laps: list[LapCreate] = []
 
     # Additional metrics
     cadence: int | None = None  # steps per minute
@@ -103,6 +128,7 @@ class RunningActivityUpdate(BaseModel):
     distance: float | None = None
     duration: float | None = None
     pace: float | None = None
+    laps: list[LapCreate] | None = None
     cadence: int | None = None
     calories: int | None = None
     effort: int | None = Field(None, ge=1, le=10)
@@ -127,6 +153,9 @@ class RunningActivityResponse(BaseModel):
     pace_formatted: str | None  # "MM:SS/km"
     duration_formatted: str | None  # "HH:MM:SS"
     speed_kmh: float | None  # km/h
+
+    # Laps
+    laps: list[LapResponse] = []
 
     # Additional metrics
     cadence: int | None
@@ -302,3 +331,48 @@ class ExerciseHistoryResponse(BaseModel):
 
     exercise_name: str
     records: list[dict]  # List of {date, weight, reps, rpe}
+
+
+# ==================== GOAL SCHEMAS ====================
+
+
+class GoalCreate(BaseModel):
+    """Create a goal for tracking activity targets."""
+
+    activity_type: str  # "running" or "strength"
+    target_frequency: int = Field(ge=1, le=14)  # e.g., 3x per week
+    period: str = "weekly"  # "weekly" or "monthly"
+    notes: str | None = None
+
+
+class GoalUpdate(BaseModel):
+    """Update a goal."""
+
+    target_frequency: int | None = Field(None, ge=1, le=14)
+    period: str | None = None
+    is_active: bool | None = None
+    notes: str | None = None
+
+
+class GoalProgressResponse(BaseModel):
+    """Progress toward a goal."""
+
+    current: int  # activities completed this period
+    target: int  # target frequency
+    percentage: float  # 0-100
+
+
+class GoalResponse(BaseModel):
+    """Goal response with progress."""
+
+    id: UUID
+    user_id: UUID
+    activity_type: str
+    target_frequency: int
+    period: str
+    is_active: bool
+    notes: str | None
+    display_text: str
+    progress: GoalProgressResponse
+    created_at: datetime
+    updated_at: datetime

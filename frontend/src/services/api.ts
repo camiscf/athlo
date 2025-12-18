@@ -20,6 +20,9 @@ import {
   BodyMeasurementCreate,
   BodyMeasurementUpdate,
   WeightRecord,
+  Goal,
+  GoalCreate,
+  GoalUpdate,
 } from '../types';
 
 import { Platform } from 'react-native';
@@ -292,6 +295,33 @@ class ApiService {
     const params = limit ? { limit } : undefined;
     const response = await this.client.get<WeightRecord[]>('/body/weight-history', { params });
     return response.data;
+  }
+
+  // ==================== GOALS ====================
+
+  async getGoals(activeOnly: boolean = true): Promise<Goal[]> {
+    const params = { active_only: activeOnly };
+    const response = await this.client.get<Goal[]>('/goals', { params });
+    return response.data;
+  }
+
+  async getGoal(id: string): Promise<Goal> {
+    const response = await this.client.get<Goal>(`/goals/${id}`);
+    return response.data;
+  }
+
+  async createGoal(data: GoalCreate): Promise<Goal> {
+    const response = await this.client.post<Goal>('/goals', data);
+    return response.data;
+  }
+
+  async updateGoal(id: string, data: GoalUpdate): Promise<Goal> {
+    const response = await this.client.put<Goal>(`/goals/${id}`, data);
+    return response.data;
+  }
+
+  async deleteGoal(id: string): Promise<void> {
+    await this.client.delete(`/goals/${id}`);
   }
 }
 

@@ -9,6 +9,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from athlo.models.body import BodyMeasurement, BodyMeasurementCreate, BodyMeasurementUpdate
+from athlo.models.user import User
 from athlo.api.deps import get_current_user
 
 router = APIRouter(prefix="/body", tags=["body"])
@@ -42,10 +43,10 @@ def save_measurements(user_id: str, measurements: List[dict]):
 @router.get("/measurements", response_model=List[BodyMeasurement])
 async def get_measurements(
     limit: Optional[int] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Get all body measurements for the current user."""
-    measurements = load_measurements(current_user["id"])
+    measurements = load_measurements(str(current_user.id))
     # Sort by date descending
     measurements.sort(key=lambda x: x.get("date", ""), reverse=True)
     if limit:
@@ -56,10 +57,10 @@ async def get_measurements(
 @router.get("/measurements/{measurement_id}", response_model=BodyMeasurement)
 async def get_measurement(
     measurement_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Get a specific body measurement."""
-    measurements = load_measurements(current_user["id"])
+    measurements = load_measurements(str(current_user.id))
     for m in measurements:
         if m["id"] == measurement_id:
             return m
@@ -69,17 +70,18 @@ async def get_measurement(
 @router.post("/measurements", response_model=BodyMeasurement)
 async def create_measurement(
     data: BodyMeasurementCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new body measurement."""
-    measurements = load_measurements(current_user["id"])
+    user_id = str(current_user.id)
+    measurements = load_measurements(user_id)
 
     # Use today's date if not provided
     date = data.date or datetime.now().strftime("%Y-%m-%d")
 
     measurement = BodyMeasurement(
         id=str(uuid.uuid4()),
-        user_id=current_user["id"],
+        user_id=user_id,
         date=date,
         weight=data.weight,
         body_fat_percentage=data.body_fat_percentage,
@@ -94,11 +96,12 @@ async def create_measurement(
         right_calf=data.right_calf,
         neck=data.neck,
         shoulders=data.shoulders,
+        glutes=data.glutes,
         notes=data.notes,
     )
 
     measurements.append(measurement.model_dump())
-    save_measurements(current_user["id"], measurements)
+    save_measurements(user_id, measurements)
 
     return measurement
 
@@ -107,10 +110,11 @@ async def create_measurement(
 async def update_measurement(
     measurement_id: str,
     data: BodyMeasurementUpdate,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a body measurement."""
-    measurements = load_measurements(current_user["id"])
+    user_id = str(current_user.id)
+    measurements = load_measurements(user_id)
 
     for i, m in enumerate(measurements):
         if m["id"] == measurement_id:
@@ -120,7 +124,7 @@ async def update_measurement(
                 m[key] = value
             m["updated_at"] = datetime.utcnow().isoformat()
 
-            save_measurements(current_user["id"], measurements)
+            save_measurements(user_id, measurements)
             return m
 
     raise HTTPException(status_code=404, detail="Measurement not found")
@@ -129,15 +133,16 @@ async def update_measurement(
 @router.delete("/measurements/{measurement_id}")
 async def delete_measurement(
     measurement_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a body measurement."""
-    measurements = load_measurements(current_user["id"])
+    user_id = str(current_user.id)
+    measurements = load_measurements(user_id)
 
     for i, m in enumerate(measurements):
         if m["id"] == measurement_id:
             measurements.pop(i)
-            save_measurements(current_user["id"], measurements)
+            save_measurements(user_id, measurements)
             return {"message": "Measurement deleted"}
 
     raise HTTPException(status_code=404, detail="Measurement not found")
@@ -145,10 +150,10 @@ async def delete_measurement(
 
 @router.get("/latest", response_model=Optional[BodyMeasurement])
 async def get_latest_measurement(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Get the latest body measurement."""
-    measurements = load_measurements(current_user["id"])
+    measurements = load_measurements(str(current_user.id))
     if not measurements:
         return None
 
@@ -160,10 +165,10 @@ async def get_latest_measurement(
 @router.get("/weight-history")
 async def get_weight_history(
     limit: Optional[int] = 30,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Get weight history for charting."""
-    measurements = load_measurements(current_user["id"])
+    measurements = load_measurements(str(current_user.id))
 
     # Filter only measurements with weight
     weight_records = [
