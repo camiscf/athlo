@@ -201,9 +201,9 @@ export default function ProfileScreen() {
     if (Platform.OS === 'web') {
       window.alert(
         'Athlo - Ajuda\n\n' +
-        '• Corrida: Use o cronometro ou registre manualmente.\n' +
-        '• Forca: Crie divisoes e registre seus treinos.\n' +
-        '• Corpo: Acompanhe suas medicoes corporais.\n' +
+        '• Corrida: Use o cronômetro ou registre manualmente.\n' +
+        '• Força: Crie divisoes e registre seus treinos.\n' +
+        '• Corpo: Acompanhe suas medições corporais.\n' +
         '• Metas: Defina metas semanais ou mensais.\n\n' +
         'Duvidas? Entre em contato pelo menu Contato.'
       );
@@ -353,7 +353,7 @@ export default function ProfileScreen() {
             />
             <SettingsItem
               icon="bell"
-              label="Notificacoes"
+              label="Notificações"
               value="Em breve"
               theme={theme}
               showArrow={false}
@@ -623,7 +623,7 @@ export default function ProfileScreen() {
               <View style={[styles.aboutDivider, { backgroundColor: theme.border.primary }]} />
 
               <Text style={[styles.aboutDescription, { color: theme.text.secondary }]}>
-                Seu companheiro completo para treinos de corrida e musculacao.
+                Seu companheiro completo para treinos de corrida e musculação.
                 Registre atividades, acompanhe seu progresso e alcance suas metas.
               </Text>
 
@@ -631,19 +631,19 @@ export default function ProfileScreen() {
                 <View style={styles.aboutFeatureItem}>
                   <Feather name="zap" size={16} color={theme.accent.primary} />
                   <Text style={[styles.aboutFeatureText, { color: theme.text.primary }]}>
-                    Corrida com cronometro
+                    Corrida com cronômetro
                   </Text>
                 </View>
                 <View style={styles.aboutFeatureItem}>
                   <Feather name="target" size={16} color={theme.accent.primary} />
                   <Text style={[styles.aboutFeatureText, { color: theme.text.primary }]}>
-                    Treinos de forca
+                    Treinos de força
                   </Text>
                 </View>
                 <View style={styles.aboutFeatureItem}>
                   <Feather name="trending-up" size={16} color={theme.accent.primary} />
                   <Text style={[styles.aboutFeatureText, { color: theme.text.primary }]}>
-                    Medicoes corporais
+                    Medições corporais
                   </Text>
                 </View>
                 <View style={styles.aboutFeatureItem}>

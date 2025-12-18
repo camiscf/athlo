@@ -188,7 +188,7 @@ export default function StatsScreen() {
     if (strengthStats.totalWorkouts > 0) {
       records.push({
         icon: 'target',
-        title: 'Treinos de Forca',
+        title: 'Treinos de Força',
         value: `${strengthStats.totalWorkouts} treinos`,
         color: theme.semantic.info,
       });
@@ -265,7 +265,7 @@ export default function StatsScreen() {
           {[
             { key: 'all', label: 'Todas Atividades' },
             { key: 'running', label: 'Corrida' },
-            { key: 'strength', label: 'Forca' },
+            { key: 'strength', label: 'Força' },
           ].map((filter) => (
             <TouchableOpacity
               key={filter.key}
@@ -481,7 +481,7 @@ export default function StatsScreen() {
                 <Feather name="target" size={18} color={theme.semantic.info} />
               </View>
               <Text style={[styles.linkText, { color: theme.text.primary }]}>
-                Estatisticas de Forca
+                Estatisticas de Força
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={theme.text.tertiary} />

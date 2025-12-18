@@ -404,7 +404,7 @@ export default function HomeScreen() {
                   <View style={styles.activityInfo}>
                     <Text style={[styles.activityTitle, { color: theme.text.primary }]} numberOfLines={1}>
                       {activity.type === 'strength'
-                        ? (activity.title || activity.division_name || 'Treino de Forca')
+                        ? (activity.title || activity.division_name || 'Treino de Força')
                         : (activity.title || 'Corrida')}
                     </Text>
                     <Text style={[styles.activityMeta, { color: theme.text.secondary }]}>
